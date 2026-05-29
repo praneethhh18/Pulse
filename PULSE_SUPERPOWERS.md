@@ -93,6 +93,12 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 ### 🛡️ Safety & trust (the agent acts on the user's behalf)
 - Tiered approval gate + hardline floor *(M)* · consent contract *(S)* · proactive runs = locked-down trust context (no auto-approve when unattended) *(S)* · SSRF floor *(S)* · secret scrubbing + non-overridable deny-list *(S)* · injection scanning + result fencing *(S)* · checkpoint/undo *(S)* · **smart-approval triage** (cheap model approves trivial, escalates only genuine ambiguity — beats notification fatigue; never covers the hardline tier) *(S)*.
 
+### 📋 Offline Life Briefing (core vision §3.3)
+- **Pre-event briefings** — ✅ **BUILT**. Tap any upcoming event → Pulse assembles a prepared
+  briefing from your documents + calendar + learned profile (Gemini live, structured template in
+  demo): what it is, what to prepare, smart questions, relevant vault docs + remembered facts.
+  Files: `apps/api/src/briefing/`. *(Next: pre-cache to device for true offline.)*
+
 ### ✉️ Email actions (core vision §3.2)
 - **One-tap reply drafting** — ✅ **BUILT**. Guardian drafts a ready-to-send reply in your voice,
   personalised by the learned profile (Gemini live, templated in demo); edit + copy. Never sends.

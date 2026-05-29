@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import {
   StatTile,
 } from '../components/ui';
 import { NudgeCard } from '../components/NudgeCard';
+import { BriefingSheet } from '../components/BriefingSheet';
 import type { CalendarEvent, MatterEmail } from '../api/types';
 import { API_URL } from '../config';
 
@@ -35,6 +37,7 @@ const EVENT_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const [briefEventId, setBriefEventId] = useState<string | null>(null);
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
 
   if (q.isLoading) return <Loader label="Reading your life…" />;
@@ -52,6 +55,7 @@ export function HomeScreen() {
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
+    <>
     <ScrollView
       style={{ backgroundColor: colors.bg }}
       contentContainerStyle={{ paddingBottom: spacing(10) }}
@@ -118,7 +122,12 @@ export function HomeScreen() {
         <Card>
           {d.upcoming.length ? (
             d.upcoming.map((e, i) => (
-              <EventRow key={e._id} event={e} last={i === d.upcoming.length - 1} />
+              <EventRow
+                key={e._id}
+                event={e}
+                last={i === d.upcoming.length - 1}
+                onPress={() => setBriefEventId(e._id)}
+              />
             ))
           ) : (
             <Text style={styles.dim}>No upcoming events.</Text>
@@ -126,6 +135,8 @@ export function HomeScreen() {
         </Card>
       </View>
     </ScrollView>
+    <BriefingSheet eventId={briefEventId} onClose={() => setBriefEventId(null)} />
+    </>
   );
 }
 
@@ -170,10 +181,21 @@ function MatterRow({ email }: { email: MatterEmail }) {
   );
 }
 
-function EventRow({ event, last }: { event: CalendarEvent; last: boolean }) {
+function EventRow({
+  event,
+  last,
+  onPress,
+}: {
+  event: CalendarEvent;
+  last: boolean;
+  onPress: () => void;
+}) {
   const d = new Date(event.startsAt);
   return (
-    <View style={[styles.eventRow, !last && styles.eventDivider]}>
+    <Pressable
+      style={[styles.eventRow, !last && styles.eventDivider]}
+      onPress={onPress}
+    >
       <View style={styles.eventIcon}>
         <Ionicons
           name={EVENT_ICON[event.type] ?? 'time'}
@@ -183,9 +205,7 @@ function EventRow({ event, last }: { event: CalendarEvent; last: boolean }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.eventTitle}>{event.title}</Text>
-        {event.location ? (
-          <Text style={styles.eventMeta}>{event.location}</Text>
-        ) : null}
+        <Text style={styles.eventBrief}>Tap to prepare ›</Text>
       </View>
       <Text style={styles.eventTime}>
         {d.toLocaleDateString('en-IN', { weekday: 'short' })}{'\n'}
@@ -193,7 +213,7 @@ function EventRow({ event, last }: { event: CalendarEvent; last: boolean }) {
           {d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
         </Text>
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -275,6 +295,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: { ...font.body, color: colors.text, fontWeight: '600' },
   eventMeta: { ...font.small, color: colors.textFaint, marginTop: 2 },
+  eventBrief: { ...font.tiny, color: colors.brandSoft, textTransform: 'none', marginTop: 2 },
   eventTime: { ...font.tiny, color: colors.textFaint, textAlign: 'right', textTransform: 'none' },
   eventTimeBold: { ...font.small, color: colors.textDim },
 });

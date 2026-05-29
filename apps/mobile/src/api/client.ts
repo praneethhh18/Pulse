@@ -92,6 +92,12 @@ export const api = {
       turnCount: number;
       lastReviewedAt?: string;
     }>('/me/profile'),
+  briefing: (eventId: string) =>
+    req<{
+      event: { title: string; startsAt: string; location?: string; type: string };
+      briefing: string;
+      sources: { type: string; label: string }[];
+    }>(`/briefings/event/${eventId}`),
 };
 
 export { API_URL };

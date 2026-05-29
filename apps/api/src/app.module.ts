@@ -17,6 +17,7 @@ import { GmailModule } from './gmail/gmail.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { MemoryModule } from './memory/memory.module';
+import { BriefingModule } from './briefing/briefing.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MemoryModule } from './memory/memory.module';
     CalendarModule,
     PrivacyModule,
     MemoryModule,
+    BriefingModule,
   ],
   controllers: [AppController],
   providers: [
