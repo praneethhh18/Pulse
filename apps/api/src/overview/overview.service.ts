@@ -20,10 +20,10 @@ export class OverviewService {
     private readonly memory: MemoryService,
   ) {}
 
-  async get(userId: string) {
+  async get(userId: string, tz = 'Asia/Kolkata') {
     const [user, nudges, matters, docs, events, profile] = await Promise.all([
       this.persistence.getRepo<UserDoc>('users').findOne({ userId }),
-      this.context.nudges(userId),
+      this.context.nudges(userId, tz),
       this.email.whatMatters(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence

@@ -13,12 +13,22 @@ export function setAuthTokenGetter(fn: () => Promise<string | null>) {
   authTokenGetter = fn;
 }
 
+// The device's IANA timezone, so the backend formats every time in the user's
+// local zone (never the server's).
+let deviceTz = 'UTC';
+try {
+  deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+} catch {
+  /* keep UTC */
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const token = authTokenGetter ? await authTokenGetter() : null;
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      'x-timezone': deviceTz,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },

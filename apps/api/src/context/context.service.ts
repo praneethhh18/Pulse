@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PersistenceService } from '../persistence/persistence.service';
 import { MemoryService } from '../memory/memory.service';
+import { fmtDate, fmtTime } from '../common/time.util';
 import type {
   CalendarEventDoc,
   DocumentDoc,
@@ -24,7 +25,7 @@ export class ContextService {
     private readonly memory: MemoryService,
   ) {}
 
-  async nudges(userId: string): Promise<NudgeDoc[]> {
+  async nudges(userId: string, tz = 'Asia/Kolkata'): Promise<NudgeDoc[]> {
     const [emails, documents, events, profile] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
@@ -35,12 +36,12 @@ export class ContextService {
     ]);
 
     const nudges: NudgeDoc[] = [
-      ...this.scheduleConflicts(userId, events),
-      ...this.emailDeadlines(userId, emails),
+      ...this.scheduleConflicts(userId, events, tz),
+      ...this.emailDeadlines(userId, emails, tz),
       ...this.needsAction(userId, emails),
-      ...this.documentExpiries(userId, documents),
-      ...this.busyDays(userId, events),
-      ...this.profilePrep(userId, profile, events),
+      ...this.documentExpiries(userId, documents, tz),
+      ...this.busyDays(userId, events, tz),
+      ...this.profilePrep(userId, profile, events, tz),
     ];
 
     // Hide anything the user has dismissed.
@@ -69,6 +70,7 @@ export class ContextService {
   private scheduleConflicts(
     userId: string,
     events: CalendarEventDoc[],
+    tz: string,
   ): NudgeDoc[] {
     const out: NudgeDoc[] = [];
     const flights = events.filter((e) => e.type === 'flight');
@@ -88,10 +90,12 @@ export class ContextService {
           kind: 'schedule-conflict',
           severity: 'critical',
           title: 'Tight morning — leave early',
-          message: `You have a ${fmtTime(flight.startsAt)} flight but "${clash.title}" runs until ${fmtTime(
+          message: `You have a ${fmtTime(flight.startsAt, tz)} flight but "${clash.title}" runs until ${fmtTime(
             clash.endsAt!,
+            tz,
           )} tonight. You'll need to leave by ${fmtTime(
             leaveBy.toISOString(),
+            tz,
           )}. Want me to set an alarm and book a cab?`,
           reason:
             'A flight departs within 14 hours of a meeting that ends at or after 8 PM, leaving little time to rest and reach the airport.',
@@ -107,7 +111,7 @@ export class ContextService {
   }
 
   // 2) Important emails with a deadline — including ones already swiped away.
-  private emailDeadlines(userId: string, emails: EmailDoc[]): NudgeDoc[] {
+  private emailDeadlines(userId: string, emails: EmailDoc[], tz: string): NudgeDoc[] {
     const now = Date.now();
     return emails
       .filter((e) => !e.handled && e.deadline)
@@ -130,6 +134,7 @@ export class ContextService {
           message: `${e.summary}${resurfaced}`,
           reason: `Email from ${e.from} was classified "${e.urgency}" with a deadline ${fmtDate(
             e.deadline!,
+            tz,
           )}.`,
           sources: [
             { collection: 'email_intelligence', id: e._id, label: e.subject },
@@ -140,7 +145,7 @@ export class ContextService {
   }
 
   // 3) Documents about to expire (vision §3.4 expiry intelligence).
-  private documentExpiries(userId: string, docs: DocumentDoc[]): NudgeDoc[] {
+  private documentExpiries(userId: string, docs: DocumentDoc[], tz: string): NudgeDoc[] {
     const now = Date.now();
     return docs
       .filter((d) => d.expiresAt)
@@ -159,6 +164,7 @@ export class ContextService {
           title: `${d.title} expires in ${days} days`,
           message: `Your ${d.title.toLowerCase()} expires on ${fmtDate(
             d.expiresAt!,
+            tz,
           )}. Want Pulse to start the renewal and compare cheaper options?`,
           reason: `Document "${d.title}" has an expiry date within 60 days.`,
           sources: [{ collection: 'documents', id: d._id, label: d.title }],
@@ -188,7 +194,7 @@ export class ContextService {
   }
 
   // Any day with 3+ events — offer a prepared rundown.
-  private busyDays(userId: string, events: CalendarEventDoc[]): NudgeDoc[] {
+  private busyDays(userId: string, events: CalendarEventDoc[], tz: string): NudgeDoc[] {
     const upcoming = events.filter(
       (e) => new Date(e.startsAt).getTime() > Date.now(),
     );
@@ -209,7 +215,7 @@ export class ContextService {
           title: `Busy day — ${evs.length} events`,
           message: `You have ${evs.length} events on ${new Date(day).toLocaleDateString(
             'en-IN',
-            { weekday: 'long', day: 'numeric', month: 'short' },
+            { weekday: 'long', day: 'numeric', month: 'short', timeZone: tz },
           )}. Want a prepared rundown the night before?`,
           reason: `${evs.length} calendar events fall on the same day.`,
           sources: evs.slice(0, 5).map((e) => ({
@@ -230,6 +236,7 @@ export class ContextService {
     userId: string,
     profile: string,
     events: CalendarEventDoc[],
+    tz: string,
   ): NudgeDoc[] {
     if (!profile) return [];
     const facts = profile.split('\n').map((l) => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
@@ -251,7 +258,7 @@ export class ContextService {
           kind: 'profile-prep',
           severity: 'info',
           title: 'Prep for your doctor visit',
-          message: `Before "${doctor.title}" on ${fmtDate(doctor.startsAt)}, want me to bring up what I know about your health? I remember: ${health.join('; ')}.`,
+          message: `Before "${doctor.title}" on ${fmtDate(doctor.startsAt, tz)}, want me to bring up what I know about your health? I remember: ${health.join('; ')}.`,
           reason: 'An upcoming doctor appointment matches health facts in your profile.',
           sources: [
             { collection: 'calendar_events', id: doctor._id, label: doctor.title },
@@ -271,7 +278,7 @@ export class ContextService {
           kind: 'profile-prep',
           severity: 'info',
           title: 'Prep for your interview',
-          message: `"${interview.title}" is on ${fmtDate(interview.startsAt)}. I can tailor prep to what I know about you: ${work.join('; ')}.`,
+          message: `"${interview.title}" is on ${fmtDate(interview.startsAt, tz)}. I can tailor prep to what I know about you: ${work.join('; ')}.`,
           reason: 'An upcoming interview matches work/skill facts in your profile.',
           sources: [
             { collection: 'calendar_events', id: interview._id, label: interview.title },
@@ -305,19 +312,4 @@ export class ContextService {
       ...n,
     };
   }
-}
-
-function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-IN', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
 }

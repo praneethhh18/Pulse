@@ -3,6 +3,7 @@ import { IsString, MinLength } from 'class-validator';
 import { ContextService } from './context.service';
 import { PersistenceService } from '../persistence/persistence.service';
 import { resolveUserId } from '../common/user.util';
+import { resolveTimezone } from '../common/time.util';
 
 class AckDto {
   @IsString() @MinLength(1) key!: string;
@@ -16,8 +17,14 @@ export class ContextController {
   ) {}
 
   @Get('nudges')
-  nudges(@Headers('x-user-id') userHeader?: string) {
-    return this.context.nudges(resolveUserId(this.persistence, userHeader));
+  nudges(
+    @Headers('x-user-id') userHeader?: string,
+    @Headers('x-timezone') tzHeader?: string,
+  ) {
+    return this.context.nudges(
+      resolveUserId(this.persistence, userHeader),
+      resolveTimezone(tzHeader),
+    );
   }
 
   @Post('nudges/ack')

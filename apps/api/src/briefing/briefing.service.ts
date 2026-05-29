@@ -3,6 +3,7 @@ import { PersistenceService } from '../persistence/persistence.service';
 import { LlmService } from '../llm/llm.service';
 import { DocumentsService } from '../documents/documents.service';
 import { MemoryService } from '../memory/memory.service';
+import { fmtDateTime } from '../common/time.util';
 import type { CalendarEventDoc } from '../domain/types';
 
 // Vision §3.3 — Offline Life Briefing. Before an important moment, Pulse pulls
@@ -17,7 +18,7 @@ export class BriefingService {
     private readonly memory: MemoryService,
   ) {}
 
-  async forEvent(userId: string, eventId: string) {
+  async forEvent(userId: string, eventId: string, tz = 'Asia/Kolkata') {
     const event = await this.persistence
       .getRepo<CalendarEventDoc>('calendar_events')
       .findOne({ _id: eventId, userId });
@@ -30,8 +31,8 @@ export class BriefingService {
     const relevant = docs.filter((d) => (d.score ?? 0) > 0.05);
 
     const briefing = this.llm.live
-      ? await this.generateLive(event, relevant, profile)
-      : this.generateDemo(event, relevant, profile);
+      ? await this.generateLive(event, relevant, profile, tz)
+      : this.generateDemo(event, relevant, profile, tz);
 
     return {
       event: {
@@ -49,13 +50,14 @@ export class BriefingService {
     event: CalendarEventDoc,
     docs: { title: string; content: string }[],
     profile: string,
+    tz: string,
   ): Promise<string> {
     const docBlock = docs.length
       ? docs.map((d) => `- ${d.title}: ${d.content}`).join('\n')
       : '(none)';
     return this.llm.generate(
       `Create a concise, skimmable pre-event briefing (markdown bullets).
-EVENT: ${event.title} (${event.type}) at ${fmt(event.startsAt)}${event.location ? `, ${event.location}` : ''}
+EVENT: ${event.title} (${event.type}) at ${fmtDateTime(event.startsAt, tz)}${event.location ? `, ${event.location}` : ''}
 ${profile ? `WHAT YOU KNOW ABOUT THE USER:\n${profile}\n` : ''}
 RELEVANT DOCUMENTS:
 ${docBlock}
@@ -69,10 +71,11 @@ Include: one line on what this is; what to bring/prepare; 3-4 smart questions or
     event: CalendarEventDoc,
     docs: { title: string; content: string }[],
     profile: string,
+    tz: string,
   ): string {
     const parts: string[] = [];
     parts.push(`**${event.title}**`);
-    parts.push(`${fmt(event.startsAt)}${event.location ? ` · ${event.location}` : ''}`);
+    parts.push(`${fmtDateTime(event.startsAt, tz)}${event.location ? ` · ${event.location}` : ''}`);
     parts.push('');
     parts.push('**Prepare:**');
     for (const item of prepFor(event.type)) parts.push(`- ${item}`);
@@ -124,14 +127,4 @@ function prepFor(type: string): string[] {
     default:
       return ['Confirm the time and location', 'Bring any relevant documents', 'Note your key points'];
   }
-}
-
-function fmt(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }

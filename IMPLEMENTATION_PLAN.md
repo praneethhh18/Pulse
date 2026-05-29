@@ -5,6 +5,28 @@
 > **Product shape:** phone-first agent (the product) + web companion (the memory window).
 > **Money flow:** $100 builds Phase 0 → win → seed → each later phase is funded by the milestone before it.
 > **Source of *what*:** `Pulse_Full_Vision.pdf`. This doc is the *how* and the *order*.
+>
+> **Companion docs:** `PROGRESS.md` (tickable status) · `PULSE_SUPERPOWERS.md` (the Hermes-derived capability menu) · `DEPLOY.md` (go-live secrets & steps).
+
+---
+
+## ✅ Build Status (living — updated as we ship)
+
+**Phase 0 MVP: DONE and exceeded.** The real, permanent stack is live and runnable in demo mode, dormant-until-secrets for cloud. What's actually built so far:
+
+- **Foundation:** NestJS API + Expo RN app; Mongo↔in-memory persistence (11+ collections); Gemini behind an LLM abstraction with a **resilience layer** (error classifier, jittered backoff, model fallback, cross-process rate breaker); demo-mode fallbacks everywhere.
+- **Watch:** Document Vault (+ camera/OCR, vector search, category filter), Email Guardian (+ live triage, resurfacing), **Gmail + Google Calendar auto-fetch + monitors** (dormant until Google creds).
+- **Learn (the superpower):** grow-with-you **memory + background learning loop** (Hermes' don't-learn discipline), char-capped profile injected into agent + nudges + greeting.
+- **Connect:** Context Engine — cross-domain, explainable, dismissible nudges; **profile-aware** prep nudges.
+- **Prepare:** **Offline Life Briefing** (event + docs + profile → prepared brief).
+- **Act:** **one-tap AI reply drafting** (personalised, never sends).
+- **Trust/ops:** Firebase Auth (multi-user, dormant), encrypted OAuth tokens, **export/delete-everything** privacy controls, GCS file storage (inline fallback), helmet/CORS/rate-limit/global-error-filter, **user-timezone-aware time** everywhere, Dockerfile + Cloud Run deploy guide.
+
+**Two layers now run in parallel** (this is the reconciliation point — there are many features, tracked in two places):
+1. **Vision phases (below)** — the long arc through all 15 modules + 5 tiers.
+2. **Superpowers layer (`PULSE_SUPERPOWERS.md`)** — Hermes-derived capabilities (memory loop ✅, resilience ✅, context-uses-memory ✅, briefings ✅, reply drafts ✅, timezone ✅; next candidates: prompt-caching discipline, observability+cost, checkpoint/undo, onboarding hints, test foundation). These *harden and deepen* the vision modules rather than replacing them.
+
+**Rule for adapting all these features without drift:** every new capability is still a *module on the platform* (Principle 1). Before building, check it's genuinely needed now (no speculative infra) and testable; mark it in `PROGRESS.md` + `PULSE_SUPERPOWERS.md` when shipped.
 
 ---
 
