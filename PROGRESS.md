@@ -96,9 +96,23 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [x] **Gmail OAuth ingestion + auto-monitor** — BUILT; activates when Google creds added
 - [x] **Google Calendar** integration + auto-monitor — BUILT; same Google connection
 - [ ] Push notifications (FCM) for nudges
-- [ ] Encryption + consent ledger + export/delete
+- [x] OAuth token encryption at rest (AES-256-GCM)
+- [ ] Consent ledger UI + export/delete-everything
 - [ ] Offline sync (Realm / Atlas Device Sync)
 - [ ] Move to an **EAS development build** (unlocks phone permissions) — `eas.json` ready; run `eas build --profile development -p android`
+
+### Production hardening (live-readiness)
+- [x] Security headers (helmet)
+- [x] CORS lockdown via `ALLOWED_ORIGINS`
+- [x] Rate limiting (120 req/min)
+- [x] Global exception filter (consistent errors, no stack leaks)
+- [x] Graceful shutdown hooks
+- [x] Multi-user inbox/calendar monitors
+- [x] Demo-seed gated off real DB
+- [x] **Dockerfile + Cloud Run deploy** (verified `docker build`)
+- [x] **`DEPLOY.md`** go-live guide (all secrets + steps)
+- [ ] Cloud file storage (GCS) for document images at scale
+- [ ] Google Secret Manager for secrets (vs env vars)
 
 ---
 

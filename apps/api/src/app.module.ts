@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { AppController } from './app.controller';
 import { PersistenceModule } from './persistence/persistence.module';
 import { LlmModule } from './llm/llm.module';
@@ -14,6 +17,7 @@ import { CalendarModule } from './calendar/calendar.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     PersistenceModule,
     LlmModule,
     DocumentsModule,
@@ -25,5 +29,9 @@ import { CalendarModule } from './calendar/calendar.module';
     CalendarModule,
   ],
   controllers: [AppController],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}
