@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PersistenceService } from '../persistence/persistence.service';
 import { LlmService } from '../llm/llm.service';
+import { StorageService } from '../storage/storage.service';
 import type { DocumentDoc } from '../domain/types';
 
 export interface CreateDocumentInput {
@@ -26,6 +27,7 @@ export class DocumentsService {
   constructor(
     private readonly persistence: PersistenceService,
     private readonly llm: LlmService,
+    private readonly storage: StorageService,
   ) {}
 
   private repo() {
@@ -48,7 +50,17 @@ export class DocumentsService {
       fileFields.hasFile = true;
       fileFields.fileName = input.fileName;
       fileFields.fileMime = input.mimeType;
-      fileFields.fileData = input.base64;
+      // Production: store bytes in Cloud Storage. Demo: inline base64 in Mongo.
+      if (this.storage.configured) {
+        fileFields.fileKey = await this.storage.uploadBase64(
+          userId,
+          input.fileName ?? 'attachment',
+          input.mimeType ?? 'application/octet-stream',
+          input.base64,
+        );
+      } else {
+        fileFields.fileData = input.base64;
+      }
     }
 
     const embedding = await this.llm.embed(
@@ -83,10 +95,15 @@ export class DocumentsService {
     }));
   }
 
-  // Full doc incl. file bytes — for previewing an attached image.
+  // File bytes for previewing an attached image — from Cloud Storage or inline.
   async getFile(userId: string, id: string) {
     const doc = await this.repo().findOne({ _id: id, userId });
-    if (!doc || !doc.fileData) return null;
-    return { fileName: doc.fileName, fileMime: doc.fileMime, base64: doc.fileData };
+    if (!doc || !doc.hasFile) return null;
+    let base64: string | undefined = doc.fileData;
+    if (!base64 && doc.fileKey && this.storage.configured) {
+      base64 = await this.storage.downloadBase64(doc.fileKey);
+    }
+    if (!base64) return null;
+    return { fileName: doc.fileName, fileMime: doc.fileMime, base64 };
   }
 }

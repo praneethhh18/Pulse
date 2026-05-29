@@ -112,7 +112,7 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [x] Demo-seed gated off real DB
 - [x] **Dockerfile + Cloud Run deploy** (verified `docker build`)
 - [x] **`DEPLOY.md`** go-live guide (all secrets + steps)
-- [ ] Cloud file storage (GCS) for document images at scale
+- [x] **Cloud file storage (GCS)** for document images — BUILT; inline base64 fallback when no bucket
 - [ ] Google Secret Manager for secrets (vs env vars)
 
 ---

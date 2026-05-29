@@ -60,7 +60,8 @@ export interface DocumentDoc extends BaseDoc {
   hasFile?: boolean;
   fileName?: string;
   fileMime?: string;
-  fileData?: string; // base64 — stored, never returned in lists/search
+  fileData?: string; // base64 — inline storage (demo / no bucket)
+  fileKey?: string; // object key in cloud storage (GCS) when configured
 }
 
 export type EmailUrgency = 'critical' | 'action' | 'informational' | 'promotional';

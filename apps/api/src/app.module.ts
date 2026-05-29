@@ -4,6 +4,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { AuthModule } from './auth/auth.module';
+import { StorageModule } from './storage/storage.module';
 import { AppController } from './app.controller';
 import { PersistenceModule } from './persistence/persistence.module';
 import { LlmModule } from './llm/llm.module';
@@ -21,6 +22,7 @@ import { PrivacyModule } from './privacy/privacy.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     AuthModule,
+    StorageModule,
     PersistenceModule,
     LlmModule,
     DocumentsModule,
