@@ -9,6 +9,7 @@ import { ContextModule } from './context/context.module';
 import { AgentModule } from './agent/agent.module';
 import { OverviewModule } from './overview/overview.module';
 import { GmailModule } from './gmail/gmail.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { GmailModule } from './gmail/gmail.module';
     AgentModule,
     OverviewModule,
     GmailModule,
+    CalendarModule,
   ],
   controllers: [AppController],
 })

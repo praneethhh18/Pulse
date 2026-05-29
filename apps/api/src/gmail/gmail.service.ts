@@ -7,6 +7,7 @@ import type { IntegrationDoc } from '../domain/types';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
 ];
 
@@ -83,6 +84,28 @@ export class GmailService {
     }
     this.logger.log(`Gmail connected for ${userId} (${email ?? 'unknown'})`);
     return { email };
+  }
+
+  async isConnected(userId: string): Promise<boolean> {
+    return !!(await this.repo().findOne({ userId, provider: 'gmail' }));
+  }
+
+  // Returns a valid (auto-refreshed) access token for the user's Google
+  // account, persisting any refreshed credentials. Shared by Gmail + Calendar.
+  async getAccessToken(userId: string): Promise<string | null> {
+    if (!this.isConfigured()) return null;
+    const integ = await this.repo().findOne({ userId, provider: 'gmail' });
+    if (!integ) return null;
+    const client = this.newClient();
+    client.setCredentials(integ.tokens);
+    const at = await client.getAccessToken();
+    const token = typeof at === 'string' ? at : at?.token;
+    if (token) {
+      await this.repo().update(integ._id, {
+        tokens: client.credentials as Record<string, unknown>,
+      });
+    }
+    return token ?? null;
   }
 
   async statusFor(userId: string) {

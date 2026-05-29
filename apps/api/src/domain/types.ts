@@ -95,11 +95,14 @@ export interface CalendarEventDoc extends BaseDoc {
   endsAt?: string;
   type: 'interview' | 'doctor' | 'meeting' | 'exam' | 'flight' | 'personal';
   location?: string;
+  source?: 'seed' | 'google';
+  sourceId?: string; // provider event id, for dedupe on auto-sync
 }
 
 // What makes Pulse different — cross-domain connections + proactive nudges.
 export interface NudgeDoc extends BaseDoc {
   kind: string; // e.g. 'deadline', 'schedule-conflict', 'expiry', 'pattern'
+  key: string; // stable identity (kind + sources) — used for dismiss/ack
   title: string;
   message: string;
   severity: 'info' | 'warning' | 'critical';

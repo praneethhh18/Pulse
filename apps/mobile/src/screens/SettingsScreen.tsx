@@ -21,6 +21,16 @@ export function SettingsScreen() {
   const qc = useQueryClient();
   const health = useQuery({ queryKey: ['health'], queryFn: api.health });
   const gmail = useQuery({ queryKey: ['gmail-status'], queryFn: api.gmailStatus });
+  const calendar = useQuery({ queryKey: ['calendar-status'], queryFn: api.calendarStatus });
+
+  const syncCal = useMutation({
+    mutationFn: api.calendarSync,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['overview'] });
+      Alert.alert('Calendar synced', `${r.added} new event(s) from ${r.fetched} fetched.`);
+    },
+    onError: (e) => Alert.alert('Sync failed', (e as Error).message),
+  });
 
   const connect = useMutation({
     mutationFn: api.gmailAuthUrl,
@@ -123,6 +133,52 @@ export function SettingsScreen() {
             Add GOOGLE_CLIENT_ID / SECRET to the API .env, then Pulse will watch your
             inbox automatically.
           </Text>
+        ) : null}
+      </Card>
+
+      <View style={{ height: spacing(3) }} />
+
+      <Card>
+        <View style={styles.row}>
+          <View style={styles.iconBubble}>
+            <Ionicons name="calendar" size={20} color={colors.brandSoft} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle}>Google Calendar</Text>
+            <Text style={styles.rowSub}>
+              {!calendar.data
+                ? 'Checking…'
+                : !calendar.data.configured
+                  ? 'Not set up yet — add Google credentials'
+                  : calendar.data.connected
+                    ? 'Connected · powers scheduling nudges'
+                    : 'Connect Gmail above (same Google account)'}
+            </Text>
+          </View>
+          <StatusPill
+            color={
+              !calendar.data?.configured
+                ? colors.textFaint
+                : calendar.data?.connected
+                  ? colors.success
+                  : colors.warning
+            }
+            label={
+              !calendar.data?.configured ? 'OFF' : calendar.data?.connected ? 'LIVE' : 'READY'
+            }
+          />
+        </View>
+
+        {calendar.data?.connected ? (
+          <View style={{ marginTop: spacing(3), gap: spacing(2) }}>
+            <Pressable onPress={() => syncCal.mutate()} style={styles.outlineBtn}>
+              <Ionicons name="sync" size={15} color={colors.brandSoft} />
+              <Text style={styles.outlineText}>
+                {syncCal.isPending ? 'Syncing…' : 'Sync calendar'}
+              </Text>
+            </Pressable>
+            <Text style={styles.note}>Auto-syncs in the background every 5 min.</Text>
+          </View>
         ) : null}
       </Card>
 

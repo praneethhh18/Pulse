@@ -22,6 +22,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   overview: () => req<Overview>('/overview'),
   nudges: () => req<Nudge[]>('/context/nudges'),
+  ackNudge: (key: string) =>
+    req<{ ok: boolean }>('/context/nudges/ack', {
+      method: 'POST',
+      body: JSON.stringify({ key }),
+    }),
   documents: () => req<DocumentItem[]>('/documents'),
   searchDocuments: (q: string) =>
     req<DocumentItem[]>(`/documents/search?q=${encodeURIComponent(q)}`),
@@ -57,6 +62,10 @@ export const api = {
     req<{ configured: boolean; url: string | null }>('/gmail/auth-url'),
   gmailSync: () =>
     req<{ fetched: number; added: number }>('/gmail/sync', { method: 'POST' }),
+  calendarStatus: () =>
+    req<{ configured: boolean; connected: boolean }>('/calendar/status'),
+  calendarSync: () =>
+    req<{ fetched: number; added: number }>('/calendar/sync', { method: 'POST' }),
 };
 
 export { API_URL };

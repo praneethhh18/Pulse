@@ -32,11 +32,31 @@ export class ContextService {
     const nudges: NudgeDoc[] = [
       ...this.scheduleConflicts(userId, events),
       ...this.emailDeadlines(userId, emails),
+      ...this.needsAction(userId, emails),
       ...this.documentExpiries(userId, documents),
+      ...this.busyDays(userId, events),
     ];
 
+    // Hide anything the user has dismissed.
+    const acked = await this.ackedKeys(userId);
+    const visible = nudges.filter((n) => !acked.has(n.key));
+
     const sev = { critical: 0, warning: 1, info: 2 } as const;
-    return nudges.sort((a, b) => sev[a.severity] - sev[b.severity]);
+    return visible.sort((a, b) => sev[a.severity] - sev[b.severity]);
+  }
+
+  // Dismissing a nudge stores its key so it won't resurface.
+  async ack(userId: string, key: string): Promise<{ ok: boolean }> {
+    const repo = this.persistence.getRepo<any>('context_engine');
+    const existing = await repo.findOne({ userId, kind: '_ack', key });
+    if (!existing) await repo.insert({ userId, kind: '_ack', key });
+    return { ok: true };
+  }
+
+  private async ackedKeys(userId: string): Promise<Set<string>> {
+    const repo = this.persistence.getRepo<any>('context_engine');
+    const docs = await repo.findByUser(userId, { kind: '_ack' });
+    return new Set(docs.map((d: any) => d.key));
   }
 
   // 1) Early flight vs late meeting → "leave by …" (the signature nudge).
@@ -141,14 +161,75 @@ export class ContextService {
       });
   }
 
+  // Action-required emails that have no explicit deadline (the deadline ones
+  // are already covered above) — still need a reply.
+  private needsAction(userId: string, emails: EmailDoc[]): NudgeDoc[] {
+    return emails
+      .filter((e) => !e.handled && e.actionRequired && !e.deadline)
+      .map((e) =>
+        this.make(userId, {
+          kind: 'needs-action',
+          severity: 'warning',
+          title: 'Waiting on you',
+          message: e.summary,
+          reason: `Email from ${e.from} needs an action and hasn't been handled yet.`,
+          sources: [
+            { collection: 'email_intelligence', id: e._id, label: e.subject },
+          ],
+          suggestedAction: { label: 'Open & handle', type: 'open-email' },
+        }),
+      );
+  }
+
+  // Any day with 3+ events — offer a prepared rundown.
+  private busyDays(userId: string, events: CalendarEventDoc[]): NudgeDoc[] {
+    const upcoming = events.filter(
+      (e) => new Date(e.startsAt).getTime() > Date.now(),
+    );
+    const byDay = new Map<string, CalendarEventDoc[]>();
+    for (const e of upcoming) {
+      const day = new Date(e.startsAt).toISOString().slice(0, 10);
+      const list = byDay.get(day) ?? [];
+      list.push(e);
+      byDay.set(day, list);
+    }
+    const out: NudgeDoc[] = [];
+    for (const [day, evs] of byDay) {
+      if (evs.length < 3) continue;
+      out.push(
+        this.make(userId, {
+          kind: 'busy-day',
+          severity: 'info',
+          title: `Busy day — ${evs.length} events`,
+          message: `You have ${evs.length} events on ${new Date(day).toLocaleDateString(
+            'en-IN',
+            { weekday: 'long', day: 'numeric', month: 'short' },
+          )}. Want a prepared rundown the night before?`,
+          reason: `${evs.length} calendar events fall on the same day.`,
+          sources: evs.slice(0, 5).map((e) => ({
+            collection: 'calendar_events' as const,
+            id: e._id,
+            label: e.title,
+          })),
+        }),
+      );
+    }
+    return out;
+  }
+
   private make(
     userId: string,
-    n: Omit<NudgeDoc, '_id' | 'userId' | 'createdAt' | 'updatedAt' | 'firedAt' | 'acknowledged'>,
+    n: Omit<
+      NudgeDoc,
+      '_id' | 'userId' | 'key' | 'createdAt' | 'updatedAt' | 'firedAt' | 'acknowledged'
+    >,
   ): NudgeDoc {
     const now = new Date().toISOString();
+    const key = `${n.kind}:${n.sources.map((s) => s.id).sort().join(',')}`;
     return {
       _id: randomUUID(),
       userId,
+      key,
       createdAt: now,
       updatedAt: now,
       firedAt: now,

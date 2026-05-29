@@ -12,6 +12,7 @@ export interface NudgeSource {
 export interface Nudge {
   _id: string;
   kind: string;
+  key: string;
   title: string;
   message: string;
   severity: Severity;

@@ -70,6 +70,7 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [ ] Semantic search + Ask quality improves with real models
 - [ ] Add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` → Settings shows Gmail "READY"
 - [ ] Settings → Connect Gmail → authorize → real inbox auto-syncs into Guardian
+- [ ] Same connection → real calendar events sync → scheduling nudges fire
 
 ---
 
@@ -80,7 +81,8 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [x] **Email ingest** UI (paste / sample → live triage)
 - [x] **Settings** tab (connections + system status)
 - [ ] Add document **categories filter** in Vault
-- [ ] More nudge types (spending pattern, reply-not-sent)
+- [x] **Dismiss/acknowledge nudges** (swipe-away that sticks)
+- [x] More nudge types (needs-action email, busy day)
 - [ ] Empty-state + error polish, loading skeletons
 - [ ] App icon + splash screen (branding)
 - [ ] Light theme option / theme toggle
@@ -89,7 +91,7 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 ### Phase 1 — Foundation (from the plan)
 - [ ] Firebase Auth (real accounts, replace demo user)
 - [x] **Gmail OAuth ingestion + auto-monitor** — BUILT; activates when Google creds added
-- [ ] **Google Calendar** integration
+- [x] **Google Calendar** integration + auto-monitor — BUILT; same Google connection
 - [ ] Push notifications (FCM) for nudges
 - [ ] Encryption + consent ledger + export/delete
 - [ ] Offline sync (Realm / Atlas Device Sync)

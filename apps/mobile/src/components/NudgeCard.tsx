@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../api/client';
 import { colors, font, radius, shadow, spacing, severityColor } from '../theme';
 import type { Nudge } from '../api/types';
 
@@ -16,6 +18,14 @@ export function NudgeCard({ nudge }: { nudge: Nudge }) {
   const [showWhy, setShowWhy] = useState(false);
   const accent = severityColor(nudge.severity);
   const critical = nudge.severity === 'critical';
+  const qc = useQueryClient();
+  const dismiss = useMutation({
+    mutationFn: () => api.ackNudge(nudge.key),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['overview'] });
+      qc.invalidateQueries({ queryKey: ['nudges'] });
+    },
+  });
 
   return (
     <View style={[styles.wrap, critical && shadow.glow]}>
@@ -40,6 +50,13 @@ export function NudgeCard({ nudge }: { nudge: Nudge }) {
               <Text style={styles.tagText}>NOW</Text>
             </View>
           ) : null}
+          <Pressable
+            onPress={() => dismiss.mutate()}
+            hitSlop={10}
+            style={styles.dismiss}
+          >
+            <Ionicons name="close" size={16} color={colors.textFaint} />
+          </Pressable>
         </View>
 
         <Text style={styles.message}>{nudge.message}</Text>
@@ -121,6 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   tagText: { ...font.tiny, color: '#0A0A0F' },
+  dismiss: { padding: 2 },
   message: { ...font.body, color: colors.textDim, lineHeight: 21 },
   action: {
     flexDirection: 'row',
