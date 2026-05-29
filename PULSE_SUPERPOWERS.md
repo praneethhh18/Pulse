@@ -93,6 +93,11 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 ### 🛡️ Safety & trust (the agent acts on the user's behalf)
 - Tiered approval gate + hardline floor *(M)* · consent contract *(S)* · proactive runs = locked-down trust context (no auto-approve when unattended) *(S)* · SSRF floor *(S)* · secret scrubbing + non-overridable deny-list *(S)* · injection scanning + result fencing *(S)* · checkpoint/undo *(S)* · **smart-approval triage** (cheap model approves trivial, escalates only genuine ambiguity — beats notification fatigue; never covers the hardline tier) *(S)*.
 
+### ✉️ Email actions (core vision §3.2)
+- **One-tap reply drafting** — ✅ **BUILT**. Guardian drafts a ready-to-send reply in your voice,
+  personalised by the learned profile (Gemini live, templated in demo); edit + copy. Never sends.
+  *(Next: send via Gmail API behind the approval gate.)*
+
 ### 🔌 Agent capability
 - **Self-registering tool registry + `isAvailable()` gating** (only show Gemini tools that can run now); **behavioral guidance lives in the tool `description`**, not the system prompt (smaller, cacheable). *(M)*
 - **Sub-agent delegation** — spawn focused children with isolated context + narrowed tools, run in parallel, parent sees only summaries; route cheap sub-tasks to Flash. Treat summaries as *unverified self-reports* — verify a returned handle before claiming success. *(M)*

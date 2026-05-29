@@ -56,6 +56,8 @@ export const api = {
     req<EmailItem>('/email', { method: 'POST', body: JSON.stringify(body) }),
   handleEmail: (id: string) =>
     req<EmailItem>(`/email/${id}/handle`, { method: 'POST' }),
+  draftReply: (id: string) =>
+    req<{ subject: string; draft: string }>(`/email/${id}/draft`, { method: 'POST' }),
   ask: (message: string) =>
     req<AgentReply>('/agent/chat', {
       method: 'POST',

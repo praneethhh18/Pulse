@@ -40,4 +40,9 @@ export class EmailController {
   handle(@Param('id') id: string) {
     return this.email.markHandled(id);
   }
+
+  @Post(':id/draft')
+  draft(@Param('id') id: string, @Headers('x-user-id') userHeader?: string) {
+    return this.email.draftReply(resolveUserId(this.persistence, userHeader), id);
+  }
 }
