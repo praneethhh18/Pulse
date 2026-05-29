@@ -7,10 +7,21 @@ import type {
   Overview,
 } from './types';
 
+// Optional auth-token provider (set by the app when Firebase Auth is enabled).
+let authTokenGetter: (() => Promise<string | null>) | null = null;
+export function setAuthTokenGetter(fn: () => Promise<string | null>) {
+  authTokenGetter = fn;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = authTokenGetter ? await authTokenGetter() : null;
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

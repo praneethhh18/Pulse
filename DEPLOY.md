@@ -14,6 +14,8 @@ changes — only configuration.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Gmail + Calendar auto-fetch | Google Cloud Console → OAuth client |
 | `TOKEN_ENCRYPTION_KEY` | Encrypt OAuth tokens at rest | `openssl rand -base64 32` |
 | `ALLOWED_ORIGINS` | CORS lockdown | your web/app domains |
+| `FIREBASE_SERVICE_ACCOUNT` | Multi-user auth (API verifies tokens) | Firebase → Service accounts → private key (paste JSON) |
+| `EXPO_PUBLIC_FIREBASE_*` | Multi-user auth (app sign-in) | Firebase → your Web app config (apiKey, authDomain, projectId, appId) |
 
 ---
 
@@ -84,8 +86,14 @@ gcloud run deploy pulse-api \
 calendar monitors, security headers (helmet), CORS lockdown, rate limiting, clean
 error handling, containerized deploy.
 
+**Multi-user (Firebase Auth):** built and dormant. To turn on:
+1. Firebase console → create project → add a **Web app** → copy config into
+   `apps/mobile/.env` (`EXPO_PUBLIC_FIREBASE_*`); enable **Email/Password** sign-in.
+2. Service accounts → generate a private key → paste the JSON (one line) into the
+   API's `FIREBASE_SERVICE_ACCOUNT`.
+3. Restart both. The app now shows a sign-in screen; the API requires a valid token
+   and scopes all data per real user. Without this config, it stays single-user demo.
+
 **Remaining production work (tracked in PROGRESS.md):**
-- **Firebase Auth** — real multi-user accounts (currently a single demo user). The
-  multi-user plumbing is already in place.
 - **Cloud file storage (GCS)** — move document image bytes out of the DB at scale.
 - **Push notifications (FCM)** — needs the EAS build above.

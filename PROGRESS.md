@@ -92,7 +92,7 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [ ] PDF upload (expo-document-picker)
 
 ### Phase 1 — Foundation (from the plan)
-- [ ] Firebase Auth (real accounts, replace demo user)
+- [x] **Firebase Auth** (multi-user, email/password) — BUILT; activates with Firebase config (demo stays single-user without it)
 - [x] **Gmail OAuth ingestion + auto-monitor** — BUILT; activates when Google creds added
 - [x] **Google Calendar** integration + auto-monitor — BUILT; same Google connection
 - [ ] Push notifications (FCM) for nudges

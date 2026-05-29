@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, API_URL } from '../api/client';
+import { authEnabled, currentEmail, signOutUser } from '../lib/firebase';
 import { colors, font, radius, spacing } from '../theme';
 import { Card, SectionHeader } from '../components/ui';
 
@@ -96,7 +97,31 @@ export function SettingsScreen() {
       }}
     >
       <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Connections & system</Text>
+      <Text style={styles.subtitle}>Account, connections & system</Text>
+
+      {authEnabled ? (
+        <>
+          <SectionHeader title="Account" icon="person-circle" />
+          <Card>
+            <View style={styles.row}>
+              <View style={styles.iconBubble}>
+                <Ionicons name="person" size={20} color={colors.brandSoft} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Signed in</Text>
+                <Text style={styles.rowSub}>{currentEmail() ?? 'your account'}</Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => signOutUser()}
+              style={[styles.outlineBtn, { marginTop: spacing(3) }]}
+            >
+              <Ionicons name="log-out" size={15} color={colors.brandSoft} />
+              <Text style={styles.outlineText}>Sign out</Text>
+            </Pressable>
+          </Card>
+        </>
+      ) : null}
 
       {/* Connections */}
       <SectionHeader title="Connections" icon="link" />
