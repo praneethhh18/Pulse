@@ -1,0 +1,105 @@
+// Pulse UI strings. Add a language = add one block here (+ list it in LANGUAGES).
+// Keep keys stable; English is the fallback for any missing key.
+
+export const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिंदी' },
+  // Tamil/Telugu/Bengali/Marathi/Kannada… drop in here when translated.
+] as const;
+
+export type LangCode = (typeof LANGUAGES)[number]['code'];
+
+export type TranslationKey = keyof typeof en;
+
+export const en = {
+  'tabs.home': 'Home',
+  'tabs.vault': 'Vault',
+  'tabs.guardian': 'Guardian',
+  'tabs.ask': 'Ask',
+  'tabs.settings': 'Settings',
+
+  'home.morning': 'Good morning, {{name}}',
+  'home.afternoon': 'Good afternoon, {{name}}',
+  'home.evening': 'Good evening, {{name}}',
+  'home.caught': "I caught {{n}} thing(s) you'd have missed.",
+  'home.allHandled': 'Everything looks handled. I’m still watching.',
+  'home.noticed': 'Pulse noticed',
+  'home.needsYou': 'Needs you',
+  'home.comingUp': 'Coming up',
+  'home.tapPrepare': 'Tap to prepare ›',
+  'home.documents': 'Documents',
+  'home.watching': 'Watching',
+  'home.nudges': 'Nudges',
+
+  'vault.title': 'Vault',
+  'vault.subtitle': 'Search by meaning — not just the filename.',
+  'guardian.title': 'Guardian',
+  'guardian.subtitle': 'Every message read. Only what matters surfaced.',
+  'guardian.draft': 'Draft reply',
+  'guardian.markHandled': 'Mark handled',
+  'guardian.handled': 'Handled',
+  'ask.title': 'Ask Pulse',
+  'ask.placeholder': 'Ask anything…',
+
+  'settings.title': 'Settings',
+  'settings.subtitle': 'Account, connections & system',
+  'settings.account': 'Account',
+  'settings.connections': 'Connections',
+  'settings.language': 'Language',
+  'settings.languageHint': 'Pulse speaks your language — UI and answers.',
+  'settings.learned': 'What Pulse has learned about you',
+  'settings.yourData': 'Your data',
+  'settings.system': 'System',
+  'settings.signOut': 'Sign out',
+  'settings.export': 'Export my data',
+  'settings.delete': 'Delete everything',
+};
+
+export const hi: Partial<Record<TranslationKey, string>> = {
+  'tabs.home': 'होम',
+  'tabs.vault': 'वॉल्ट',
+  'tabs.guardian': 'गार्डियन',
+  'tabs.ask': 'पूछें',
+  'tabs.settings': 'सेटिंग्स',
+
+  'home.morning': 'सुप्रभात, {{name}}',
+  'home.afternoon': 'नमस्कार, {{name}}',
+  'home.evening': 'शुभ संध्या, {{name}}',
+  'home.caught': 'मैंने {{n}} ज़रूरी बात पकड़ी जो छूट सकती थी।',
+  'home.allHandled': 'सब कुछ संभला हुआ लग रहा है। मैं नज़र रख रहा हूँ।',
+  'home.noticed': 'पल्स ने नोटिस किया',
+  'home.needsYou': 'आपकी ज़रूरत है',
+  'home.comingUp': 'आगे आने वाला',
+  'home.tapPrepare': 'तैयारी के लिए टैप करें ›',
+  'home.documents': 'दस्तावेज़',
+  'home.watching': 'निगरानी',
+  'home.nudges': 'सूचनाएँ',
+
+  'vault.title': 'वॉल्ट',
+  'vault.subtitle': 'मतलब से खोजें — सिर्फ़ फ़ाइल नाम से नहीं।',
+  'guardian.title': 'गार्डियन',
+  'guardian.subtitle': 'हर संदेश पढ़ा गया। सिर्फ़ ज़रूरी बातें सामने।',
+  'guardian.draft': 'जवाब लिखें',
+  'guardian.markHandled': 'निपटा हुआ चिह्नित करें',
+  'guardian.handled': 'निपट गया',
+  'ask.title': 'पल्स से पूछें',
+  'ask.placeholder': 'कुछ भी पूछें…',
+
+  'settings.title': 'सेटिंग्स',
+  'settings.subtitle': 'खाता, कनेक्शन और सिस्टम',
+  'settings.account': 'खाता',
+  'settings.connections': 'कनेक्शन',
+  'settings.language': 'भाषा',
+  'settings.languageHint': 'पल्स आपकी भाषा बोलता है — UI और जवाब दोनों।',
+  'settings.learned': 'पल्स ने आपके बारे में क्या सीखा',
+  'settings.yourData': 'आपका डेटा',
+  'settings.system': 'सिस्टम',
+  'settings.signOut': 'साइन आउट',
+  'settings.export': 'मेरा डेटा निर्यात करें',
+  'settings.delete': 'सब कुछ हटाएँ',
+};
+
+export const dictionaries: Record<string, Partial<Record<TranslationKey, string>>> = {
+  en,
+  hi,
+};

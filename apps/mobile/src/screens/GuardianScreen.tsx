@@ -19,6 +19,7 @@ import { api } from '../api/client';
 import { colors, font, radius, shadow, spacing } from '../theme';
 import { Card, Chip, EmptyState, Loader } from '../components/ui';
 import { AddEmailSheet } from '../components/AddEmailSheet';
+import { useI18n } from '../i18n';
 import type { EmailItem, Urgency } from '../api/types';
 
 const URGENCY: Record<Urgency, { color: string; label: string }> = {
@@ -31,6 +32,7 @@ const URGENCY: Record<Urgency, { color: string; label: string }> = {
 export function GuardianScreen() {
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [showAdd, setShowAdd] = useState(false);
   const [draft, setDraft] = useState({ open: false, loading: false, subject: '', text: '' });
   const emails = useQuery({ queryKey: ['emails'], queryFn: api.emails });
@@ -62,10 +64,8 @@ export function GuardianScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + spacing(3) }}>
       <View style={styles.head}>
-        <Text style={styles.title}>Guardian</Text>
-        <Text style={styles.subtitle}>
-          Every message read. Only what matters surfaced.
-        </Text>
+        <Text style={styles.title}>{t('guardian.title')}</Text>
+        <Text style={styles.subtitle}>{t('guardian.subtitle')}</Text>
       </View>
       <FlatList
         data={emails.data ?? []}
@@ -159,6 +159,7 @@ function EmailCard({
   handling: boolean;
   onDraft: () => void;
 }) {
+  const { t } = useI18n();
   const u = URGENCY[email.urgency];
   return (
     <Card style={{ opacity: email.handled ? 0.55 : 1 }}>
@@ -194,7 +195,7 @@ function EmailCard({
         <View style={styles.actionRow}>
           <Pressable style={styles.draftBtn} onPress={onDraft}>
             <Ionicons name="create-outline" size={15} color={colors.accent} />
-            <Text style={[styles.handleText, { color: colors.accent }]}>Draft reply</Text>
+            <Text style={[styles.handleText, { color: colors.accent }]}>{t('guardian.draft')}</Text>
           </Pressable>
           <Pressable
             style={[styles.handleBtn, email.handled && { borderColor: colors.success }]}
@@ -211,7 +212,7 @@ function EmailCard({
                 { color: email.handled ? colors.success : colors.brandSoft },
               ]}
             >
-              {email.handled ? 'Handled' : handling ? 'Saving…' : 'Mark handled'}
+              {email.handled ? t('guardian.handled') : handling ? 'Saving…' : t('guardian.markHandled')}
             </Text>
           </Pressable>
         </View>

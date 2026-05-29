@@ -22,6 +22,12 @@ try {
   /* keep UTC */
 }
 
+// Current UI language — the backend uses it so the agent answers in this language.
+let currentLang = 'en';
+export function setApiLanguage(lang: string) {
+  currentLang = lang || 'en';
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const token = authTokenGetter ? await authTokenGetter() : null;
   const res = await fetch(`${API_URL}${path}`, {
@@ -29,6 +35,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       'x-timezone': deviceTz,
+      'x-language': currentLang,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },

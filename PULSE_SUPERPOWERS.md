@@ -118,7 +118,7 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 
 ### 🌍 Multimodal & India edge
 - **Native-vs-describe image routing** (pixels inline if model sees, else pre-describe). *(S)*
-- **Indic-language i18n chrome** (Hindi/Tamil/Telugu/Bengali/Marathi/Kannada) — Hermes has **zero** Indic coverage; localize app chrome + let Gemini produce localized prose. Parity-tested. *(S)*
+- **Indic-language i18n** — ✅ **BUILT**. Extensible i18n (provider + dictionary, device-locale default, persisted choice, Settings picker) shipping **English + हिंदी** with localized chrome across every tab/screen; backend takes `x-language` so the **agent answers in the user's language** (chat, briefings, reply drafts) when Gemini is live. Adding Tamil/Telugu/Bengali/Marathi/Kannada = one dictionary block. Hermes has **zero** Indic. Files: `apps/mobile/src/i18n/`, `apps/api/src/common/lang.util.ts`.
 - **Multi-provider STT/TTS** with a free/offline fallback (cost + connectivity). *(M)*
 - **Tiered OCR** — cheap text-layer extract first, escalate to Gemini vision only for scans/photos. *(M)*
 - **Cached media store** with magic-byte validation + TTL cleanup. *(S)*

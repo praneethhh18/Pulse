@@ -18,6 +18,7 @@ import { api } from '../api/client';
 import { colors, font, radius, shadow, spacing } from '../theme';
 import { Card, Chip, EmptyState } from '../components/ui';
 import { AddDocumentSheet } from '../components/AddDocumentSheet';
+import { useI18n } from '../i18n';
 import type { DocumentItem } from '../api/types';
 
 const CATEGORY_COLOR: Record<string, string> = {
@@ -49,6 +50,7 @@ export function VaultScreen() {
   const [submitted, setSubmitted] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [cat, setCat] = useState<(typeof FILTERS)[number]>('all');
+  const { t } = useI18n();
 
   const all = useQuery({ queryKey: ['documents'], queryFn: api.documents });
   const search = useQuery({
@@ -65,10 +67,8 @@ export function VaultScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + spacing(3) }}>
       <View style={styles.head}>
-        <Text style={styles.title}>Vault</Text>
-        <Text style={styles.subtitle}>
-          Search by meaning — not just the filename.
-        </Text>
+        <Text style={styles.title}>{t('vault.title')}</Text>
+        <Text style={styles.subtitle}>{t('vault.subtitle')}</Text>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color={colors.textFaint} />
           <TextInput

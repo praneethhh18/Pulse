@@ -23,6 +23,7 @@ import {
 } from '../components/ui';
 import { NudgeCard } from '../components/NudgeCard';
 import { BriefingSheet } from '../components/BriefingSheet';
+import { useI18n } from '../i18n';
 import type { CalendarEvent, MatterEmail } from '../api/types';
 import { API_URL } from '../config';
 
@@ -38,6 +39,7 @@ const EVENT_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [briefEventId, setBriefEventId] = useState<string | null>(null);
+  const { t } = useI18n();
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
 
   if (q.isLoading) return <Loader label="Reading your life…" />;
@@ -51,8 +53,8 @@ export function HomeScreen() {
 
   const d = q.data;
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greetingKey =
+    hour < 12 ? 'home.morning' : hour < 17 ? 'home.afternoon' : 'home.evening';
 
   return (
     <>
@@ -80,26 +82,24 @@ export function HomeScreen() {
             ai={d.mode.ai}
           />
         </View>
-        <Text style={styles.greeting}>
-          {greeting}, {d.greetingName}
-        </Text>
+        <Text style={styles.greeting}>{t(greetingKey, { name: d.greetingName })}</Text>
         <Text style={styles.subGreeting}>
           {d.stats.nudges > 0
-            ? `I caught ${d.stats.nudges} thing${d.stats.nudges > 1 ? 's' : ''} you'd have missed.`
-            : 'Everything looks handled. I’m still watching.'}
+            ? t('home.caught', { n: d.stats.nudges })
+            : t('home.allHandled')}
         </Text>
 
         <View style={styles.statsRow}>
-          <StatTile value={d.stats.documents} label="Documents" icon="folder-open" />
-          <StatTile value={d.stats.watching} label="Watching" icon="eye" />
-          <StatTile value={d.stats.nudges} label="Nudges" icon="notifications" />
+          <StatTile value={d.stats.documents} label={t('home.documents')} icon="folder-open" />
+          <StatTile value={d.stats.watching} label={t('home.watching')} icon="eye" />
+          <StatTile value={d.stats.nudges} label={t('home.nudges')} icon="notifications" />
         </View>
       </LinearGradient>
 
       <View style={styles.body}>
         {/* Nudges — the soul of Pulse */}
         <SectionHeader
-          title="Pulse noticed"
+          title={t('home.noticed')}
           icon="sparkles"
           caption={d.nudges.length ? `${d.nudges.length} active` : undefined}
         />
@@ -110,7 +110,7 @@ export function HomeScreen() {
         )}
 
         {/* Needs you */}
-        <SectionHeader title="Needs you" icon="mail-unread" />
+        <SectionHeader title={t('home.needsYou')} icon="mail-unread" />
         {d.matters.length ? (
           d.matters.map((m) => <MatterRow key={m._id} email={m} />)
         ) : (
@@ -118,7 +118,7 @@ export function HomeScreen() {
         )}
 
         {/* Coming up */}
-        <SectionHeader title="Coming up" icon="calendar" />
+        <SectionHeader title={t('home.comingUp')} icon="calendar" />
         <Card>
           {d.upcoming.length ? (
             d.upcoming.map((e, i) => (
@@ -191,6 +191,7 @@ function EventRow({
   onPress: () => void;
 }) {
   const d = new Date(event.startsAt);
+  const { t } = useI18n();
   return (
     <Pressable
       style={[styles.eventRow, !last && styles.eventDivider]}
@@ -205,7 +206,7 @@ function EventRow({
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.eventTitle}>{event.title}</Text>
-        <Text style={styles.eventBrief}>Tap to prepare ›</Text>
+        <Text style={styles.eventBrief}>{t('home.tapPrepare')}</Text>
       </View>
       <Text style={styles.eventTime}>
         {d.toLocaleDateString('en-IN', { weekday: 'short' })}{'\n'}

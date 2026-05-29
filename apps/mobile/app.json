@@ -40,7 +40,8 @@
           "photosPermission": "Pulse needs access to your photos so you can attach documents to your vault.",
           "cameraPermission": "Pulse needs your camera so you can scan documents into your vault."
         }
-      ]
+      ],
+      "expo-localization"
     ]
   }
 }

@@ -3,6 +3,7 @@ import { IsString, MinLength } from 'class-validator';
 import { AgentService } from './agent.service';
 import { PersistenceService } from '../persistence/persistence.service';
 import { resolveUserId } from '../common/user.util';
+import { resolveLanguage } from '../common/lang.util';
 
 class ChatDto {
   @IsString() @MinLength(1) message!: string;
@@ -16,10 +17,15 @@ export class AgentController {
   ) {}
 
   @Post('chat')
-  chat(@Body() dto: ChatDto, @Headers('x-user-id') userHeader?: string) {
+  chat(
+    @Body() dto: ChatDto,
+    @Headers('x-user-id') userHeader?: string,
+    @Headers('x-language') langHeader?: string,
+  ) {
     return this.agent.chat(
       resolveUserId(this.persistence, userHeader),
       dto.message,
+      resolveLanguage(langHeader),
     );
   }
 }

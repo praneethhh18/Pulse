@@ -5,6 +5,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { ContextService } from '../context/context.service';
 import { MemoryService } from '../memory/memory.service';
+import { languageDirective } from '../common/lang.util';
 import type { CalendarEventDoc } from '../domain/types';
 
 export interface AgentReply {
@@ -25,7 +26,7 @@ export class AgentService {
   ) {}
 
   // Answers grounded in the user's own life — documents, mail, calendar, nudges.
-  async chat(userId: string, message: string): Promise<AgentReply> {
+  async chat(userId: string, message: string, lang = 'en'): Promise<AgentReply> {
     const [docs, matters, nudges, events, profile] = await Promise.all([
       this.documents.search(userId, message, 3),
       this.email.whatMatters(userId),
@@ -53,9 +54,10 @@ export class AgentService {
       const profileBlock = profile
         ? `\n\nWhat you know about this user (their profile):\n${profile}`
         : '';
+      const langClause = languageDirective(lang);
       const answer = await this.llm.generate(
         `User asks: "${message}"\n\nHere is everything Pulse knows that's relevant:\n${ctx}\n\nAnswer helpfully and concisely as Pulse, the user's life agent. Reference specifics.`,
-        `You are Pulse, a proactive personal life agent. Be warm, concise, specific. Never invent facts not in the context.${profileBlock}`,
+        `You are Pulse, a proactive personal life agent. Be warm, concise, specific. Never invent facts not in the context.${profileBlock}${langClause ? `\n\n${langClause}` : ''}`,
       );
       // Learn from this turn in the background — never blocks the reply.
       this.memory.reviewAsync(userId, [...transcript, { role: 'pulse', text: answer }]);

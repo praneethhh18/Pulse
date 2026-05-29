@@ -14,12 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, API_URL } from '../api/client';
 import { authEnabled, currentEmail, signOutUser } from '../lib/firebase';
+import { useI18n } from '../i18n';
 import { colors, font, radius, spacing } from '../theme';
 import { Card, SectionHeader } from '../components/ui';
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const { t, lang, setLang, languages } = useI18n();
   const health = useQuery({ queryKey: ['health'], queryFn: api.health });
   const gmail = useQuery({ queryKey: ['gmail-status'], queryFn: api.gmailStatus });
   const calendar = useQuery({ queryKey: ['calendar-status'], queryFn: api.calendarStatus });
@@ -97,12 +99,35 @@ export function SettingsScreen() {
         paddingBottom: spacing(10),
       }}
     >
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Account, connections & system</Text>
+      <Text style={styles.title}>{t('settings.title')}</Text>
+      <Text style={styles.subtitle}>{t('settings.subtitle')}</Text>
+
+      {/* Language — Pulse speaks your language */}
+      <SectionHeader title={t('settings.language')} icon="language" />
+      <Card>
+        <Text style={[styles.dataNote, { marginBottom: spacing(3) }]}>
+          {t('settings.languageHint')}
+        </Text>
+        <View style={styles.langRow}>
+          {languages.map((l) => (
+            <Pressable
+              key={l.code}
+              onPress={() => setLang(l.code)}
+              style={[styles.langChip, lang === l.code && styles.langChipActive]}
+            >
+              <Text
+                style={[styles.langText, lang === l.code && styles.langTextActive]}
+              >
+                {l.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
 
       {authEnabled ? (
         <>
-          <SectionHeader title="Account" icon="person-circle" />
+          <SectionHeader title={t('settings.account')} icon="person-circle" />
           <Card>
             <View style={styles.row}>
               <View style={styles.iconBubble}>
@@ -118,14 +143,14 @@ export function SettingsScreen() {
               style={[styles.outlineBtn, { marginTop: spacing(3) }]}
             >
               <Ionicons name="log-out" size={15} color={colors.brandSoft} />
-              <Text style={styles.outlineText}>Sign out</Text>
+              <Text style={styles.outlineText}>{t('settings.signOut')}</Text>
             </Pressable>
           </Card>
         </>
       ) : null}
 
       {/* Connections */}
-      <SectionHeader title="Connections" icon="link" />
+      <SectionHeader title={t('settings.connections')} icon="link" />
       <Card>
         <View style={styles.row}>
           <View style={styles.iconBubble}>
@@ -240,7 +265,7 @@ export function SettingsScreen() {
       </Card>
 
       {/* System */}
-      <SectionHeader title="System" icon="hardware-chip" />
+      <SectionHeader title={t('settings.system')} icon="hardware-chip" />
       <Card>
         <ModeRow
           icon="server"
@@ -260,7 +285,7 @@ export function SettingsScreen() {
       </Card>
 
       {/* What Pulse has learned — the grow-with-you memory */}
-      <SectionHeader title="What Pulse has learned about you" icon="sparkles" />
+      <SectionHeader title={t('settings.learned')} icon="sparkles" />
       <Card>
         {profile.data && profile.data.facts.length ? (
           <View style={{ gap: spacing(2) }}>
@@ -283,7 +308,7 @@ export function SettingsScreen() {
       </Card>
 
       {/* Your data — privacy controls */}
-      <SectionHeader title="Your data" icon="lock-closed" />
+      <SectionHeader title={t('settings.yourData')} icon="lock-closed" />
       <Card>
         <Text style={styles.dataLine}>
           {dataSummary.data
@@ -297,14 +322,14 @@ export function SettingsScreen() {
         <Pressable onPress={() => exportMut.mutate()} style={[styles.outlineBtn, { marginTop: spacing(3) }]}>
           <Ionicons name="download" size={15} color={colors.brandSoft} />
           <Text style={styles.outlineText}>
-            {exportMut.isPending ? 'Preparing…' : 'Export my data'}
+            {exportMut.isPending ? 'Preparing…' : t('settings.export')}
           </Text>
         </Pressable>
 
         <Pressable onPress={confirmDelete} style={[styles.dangerBtn, { marginTop: spacing(2) }]}>
           <Ionicons name="trash" size={15} color={colors.critical} />
           <Text style={styles.dangerText}>
-            {deleteMut.isPending ? 'Deleting…' : 'Delete everything'}
+            {deleteMut.isPending ? 'Deleting…' : t('settings.delete')}
           </Text>
         </Pressable>
       </Card>
@@ -414,6 +439,18 @@ const styles = StyleSheet.create({
   note: { ...font.small, color: colors.textFaint, marginTop: spacing(2), lineHeight: 18 },
   dataLine: { ...font.body, color: colors.text, fontWeight: '600' },
   dataNote: { ...font.small, color: colors.textDim, marginTop: spacing(1), lineHeight: 18 },
+  langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
+  langChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(2.5),
+  },
+  langChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  langText: { ...font.body, color: colors.textDim },
+  langTextActive: { color: '#0A0A0F', fontWeight: '700' },
   factRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) },
   factText: { ...font.body, color: colors.text, flex: 1 },
   dangerBtn: {

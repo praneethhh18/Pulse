@@ -15,6 +15,8 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SignInScreen } from './src/screens/SignInScreen';
 import { authEnabled, watchAuth, getIdToken } from './src/lib/firebase';
 import { setAuthTokenGetter } from './src/api/client';
+import { I18nProvider, useI18n } from './src/i18n';
+import type { TranslationKey } from './src/i18n/translations';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -43,6 +45,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 function MainTabs() {
+  const { t } = useI18n();
   return (
     <NavigationContainer theme={navTheme}>
       <Tab.Navigator
@@ -59,6 +62,7 @@ function MainTabs() {
             paddingTop: 8,
           },
           tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarLabel: t(`tabs.${route.name.toLowerCase()}` as TranslationKey),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name={ICONS[route.name]} size={size} color={color} />
           ),
@@ -107,10 +111,12 @@ function Root() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
-        <Root />
-      </QueryClientProvider>
+      <I18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="light" />
+          <Root />
+        </QueryClientProvider>
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }

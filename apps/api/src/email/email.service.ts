@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PersistenceService } from '../persistence/persistence.service';
 import { LlmService } from '../llm/llm.service';
 import { MemoryService } from '../memory/memory.service';
+import { languageDirective } from '../common/lang.util';
 import type { EmailDoc, EmailUrgency } from '../domain/types';
 
 const URGENCY_RANK: Record<EmailUrgency, number> = {
@@ -74,12 +75,14 @@ export class EmailService {
   async draftReply(
     userId: string,
     id: string,
+    lang = 'en',
   ): Promise<{ subject: string; draft: string }> {
     const email = await this.repo().findOne({ _id: id, userId });
     if (!email) throw new NotFoundException('Email not found');
     const profile = await this.memory.getProfileText(userId);
 
     if (this.llm.live) {
+      const langClause = languageDirective(lang);
       const draft = await this.llm.generate(
         `Draft a concise, polite reply to the email below — first person, ready to send, no placeholders. Sign off with the user's name if it's in their profile.
 ${profile ? `USER PROFILE:\n${profile}\n` : ''}
@@ -88,7 +91,7 @@ SUBJECT: ${email.subject}
 BODY: ${email.body}
 
 Reply with ONLY the email body text.`,
-        'You are Pulse, drafting an email reply in the user\'s voice. Be brief and natural.',
+        `You are Pulse, drafting an email reply in the user's voice. Be brief and natural.${langClause ? ` ${langClause}` : ''}`,
       );
       return { subject: `Re: ${email.subject}`, draft: draft.trim() };
     }

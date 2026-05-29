@@ -3,6 +3,7 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
 import { EmailService } from './email.service';
 import { PersistenceService } from '../persistence/persistence.service';
 import { resolveUserId } from '../common/user.util';
+import { resolveLanguage } from '../common/lang.util';
 
 class IngestEmailDto {
   @IsString() @MinLength(1) from!: string;
@@ -42,7 +43,15 @@ export class EmailController {
   }
 
   @Post(':id/draft')
-  draft(@Param('id') id: string, @Headers('x-user-id') userHeader?: string) {
-    return this.email.draftReply(resolveUserId(this.persistence, userHeader), id);
+  draft(
+    @Param('id') id: string,
+    @Headers('x-user-id') userHeader?: string,
+    @Headers('x-language') langHeader?: string,
+  ) {
+    return this.email.draftReply(
+      resolveUserId(this.persistence, userHeader),
+      id,
+      resolveLanguage(langHeader),
+    );
   }
 }

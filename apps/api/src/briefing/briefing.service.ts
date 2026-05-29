@@ -4,6 +4,7 @@ import { LlmService } from '../llm/llm.service';
 import { DocumentsService } from '../documents/documents.service';
 import { MemoryService } from '../memory/memory.service';
 import { fmtDateTime } from '../common/time.util';
+import { languageDirective } from '../common/lang.util';
 import type { CalendarEventDoc } from '../domain/types';
 
 // Vision §3.3 — Offline Life Briefing. Before an important moment, Pulse pulls
@@ -18,7 +19,7 @@ export class BriefingService {
     private readonly memory: MemoryService,
   ) {}
 
-  async forEvent(userId: string, eventId: string, tz = 'Asia/Kolkata') {
+  async forEvent(userId: string, eventId: string, tz = 'Asia/Kolkata', lang = 'en') {
     const event = await this.persistence
       .getRepo<CalendarEventDoc>('calendar_events')
       .findOne({ _id: eventId, userId });
@@ -31,7 +32,7 @@ export class BriefingService {
     const relevant = docs.filter((d) => (d.score ?? 0) > 0.05);
 
     const briefing = this.llm.live
-      ? await this.generateLive(event, relevant, profile, tz)
+      ? await this.generateLive(event, relevant, profile, tz, lang)
       : this.generateDemo(event, relevant, profile, tz);
 
     return {
@@ -51,10 +52,12 @@ export class BriefingService {
     docs: { title: string; content: string }[],
     profile: string,
     tz: string,
+    lang: string,
   ): Promise<string> {
     const docBlock = docs.length
       ? docs.map((d) => `- ${d.title}: ${d.content}`).join('\n')
       : '(none)';
+    const langClause = languageDirective(lang);
     return this.llm.generate(
       `Create a concise, skimmable pre-event briefing (markdown bullets).
 EVENT: ${event.title} (${event.type}) at ${fmtDateTime(event.startsAt, tz)}${event.location ? `, ${event.location}` : ''}
@@ -63,7 +66,7 @@ RELEVANT DOCUMENTS:
 ${docBlock}
 
 Include: one line on what this is; what to bring/prepare; 3-4 smart questions or points to raise; anything from their documents or profile worth flagging. Keep it tight.`,
-      'You are Pulse preparing the user for an event. Be practical, specific, and brief.',
+      `You are Pulse preparing the user for an event. Be practical, specific, and brief.${langClause ? ` ${langClause}` : ''}`,
     );
   }
 

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useI18n } from '../i18n';
 import { colors, font, radius, spacing } from '../theme';
 
 interface Msg {
@@ -41,6 +42,7 @@ export function AskScreen() {
   ]);
   const scrollRef = useRef<ScrollView>(null);
   const qc = useQueryClient();
+  const { t } = useI18n();
 
   const send = async (text: string) => {
     const q = text.trim();
@@ -79,7 +81,7 @@ export function AskScreen() {
         <View style={styles.logoDot}>
           <Ionicons name="flash" size={13} color="#0A0A0F" />
         </View>
-        <Text style={styles.title}>Ask Pulse</Text>
+        <Text style={styles.title}>{t('ask.title')}</Text>
       </View>
 
       <ScrollView
@@ -106,7 +108,7 @@ export function AskScreen() {
       <View style={[styles.inputBar, { paddingBottom: insets.bottom + spacing(3) }]}>
         <TextInput
           style={styles.input}
-          placeholder="Ask anything…"
+          placeholder={t('ask.placeholder')}
           placeholderTextColor={colors.textFaint}
           value={input}
           onChangeText={setInput}
