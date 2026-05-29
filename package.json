@@ -1,0 +1,14 @@
+{
+  "name": "pulse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pulse — The Life Agent. A phone-first proactive AI agent. (Phase 0 MVP)",
+  "scripts": {
+    "api": "npm --prefix apps/api run start:prod",
+    "api:dev": "npm --prefix apps/api run start:dev",
+    "api:build": "npm --prefix apps/api run build",
+    "mobile": "npm --prefix apps/mobile run start",
+    "mobile:web": "npm --prefix apps/mobile run web",
+    "install:all": "npm --prefix apps/api install && npm --prefix apps/mobile install"
+  }
+}
