@@ -28,6 +28,7 @@ const ALL_COLLECTIONS: CollectionName[] = [
   'call_intelligence',
   'relationship_memory',
   'integrations',
+  'user_profile',
 ];
 
 @Injectable()

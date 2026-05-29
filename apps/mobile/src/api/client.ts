@@ -83,6 +83,13 @@ export const api = {
     req<{ totalRecords: number; categories: number; exportedAt: string }>('/me/export'),
   deleteAllData: () =>
     req<{ ok: boolean; total: number }>('/me', { method: 'DELETE' }),
+  profile: () =>
+    req<{
+      content: string;
+      facts: string[];
+      turnCount: number;
+      lastReviewedAt?: string;
+    }>('/me/profile'),
 };
 
 export { API_URL };

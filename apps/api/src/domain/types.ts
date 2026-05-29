@@ -17,7 +17,8 @@ export type CollectionName =
   | 'event_briefings'
   | 'call_intelligence'
   | 'relationship_memory'
-  | 'integrations';
+  | 'integrations'
+  | 'user_profile';
 
 export interface BaseDoc {
   _id: string;
@@ -80,6 +81,15 @@ export interface EmailDoc extends BaseDoc {
   dismissed: boolean; // swiped away — Pulse may resurface before deadline
   source?: 'seed' | 'manual' | 'gmail'; // where it came from
   sourceId?: string; // provider message id, for dedupe on auto-sync
+}
+
+// The "grows with you" layer — a compact, always-injected model of the user,
+// built by the background learning loop (see MemoryService). Tier-2 of the
+// Hermes memory design (its USER.md): char-capped so it stays high-signal.
+export interface UserProfileDoc extends BaseDoc {
+  content: string; // bulleted durable facts about the user
+  turnCount: number; // how many turns observed
+  lastReviewedAt?: string;
 }
 
 // Stored OAuth connection to an external account (Gmail, later Calendar, etc.)

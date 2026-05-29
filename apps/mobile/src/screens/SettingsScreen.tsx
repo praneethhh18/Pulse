@@ -34,6 +34,7 @@ export function SettingsScreen() {
   });
 
   const dataSummary = useQuery({ queryKey: ['data-summary'], queryFn: api.dataSummary });
+  const profile = useQuery({ queryKey: ['profile'], queryFn: api.profile });
 
   const exportMut = useMutation({
     mutationFn: api.exportData,
@@ -258,6 +259,29 @@ export function SettingsScreen() {
         <ModeRow icon="globe" label="API" value={API_URL} ok mono />
       </Card>
 
+      {/* What Pulse has learned — the grow-with-you memory */}
+      <SectionHeader title="What Pulse has learned about you" icon="sparkles" />
+      <Card>
+        {profile.data && profile.data.facts.length ? (
+          <View style={{ gap: spacing(2) }}>
+            {profile.data.facts.map((f, i) => (
+              <View key={i} style={styles.factRow}>
+                <Ionicons name="ellipse" size={6} color={colors.brandSoft} />
+                <Text style={styles.factText}>{f.replace(/^[-•]\s*/, '')}</Text>
+              </View>
+            ))}
+            <Text style={styles.note}>
+              Pulse learns this quietly as you chat — it never stops getting to know you.
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.dataNote}>
+            Still getting to know you. Chat in Ask Pulse — try "remember I'm vegetarian"
+            — and it'll appear here.
+          </Text>
+        )}
+      </Card>
+
       {/* Your data — privacy controls */}
       <SectionHeader title="Your data" icon="lock-closed" />
       <Card>
@@ -390,6 +414,8 @@ const styles = StyleSheet.create({
   note: { ...font.small, color: colors.textFaint, marginTop: spacing(2), lineHeight: 18 },
   dataLine: { ...font.body, color: colors.text, fontWeight: '600' },
   dataNote: { ...font.small, color: colors.textDim, marginTop: spacing(1), lineHeight: 18 },
+  factRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) },
+  factText: { ...font.body, color: colors.text, flex: 1 },
   dangerBtn: {
     flexDirection: 'row',
     alignItems: 'center',

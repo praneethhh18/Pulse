@@ -12,12 +12,12 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 
 ## 🏆 Top 10 (build these first, in roughly this order)
 
-1. **🧠 Grow-with-you memory + background learning loop** — the core Pulse promise.
-   After interactions, an async cheap-Gemini job extracts durable facts about the user
-   and writes them to a tiny, always-injected profile — **with Hermes' curated "don't-learn"
-   list** (skip transient errors, "tool X broke", env quirks) so memory never self-poisons.
-   *Effort: M.* `memories` + `userProfile` Mongo collections; BullMQ post-turn job; char-capped
-   profile loaded into the Gemini system instruction per session.
+1. **🧠 Grow-with-you memory + background learning loop** — ✅ **BUILT**.
+   After each Ask-Pulse turn an async, out-of-band pass extracts durable facts about the user
+   (Gemini live, heuristic in demo) and edits a char-capped `user_profile` via add/replace/remove
+   ops — **with Hermes' curated "don't-learn" prompt** so memory never self-poisons. Profile is
+   injected into the agent so it personalises answers; shown in Settings → "What Pulse has learned
+   about you". Files: `apps/api/src/memory/`. *(Next: latency-hiding recall + periodic curator.)*
 
 2. **⚙️ Reliability/cost spine for unattended calls** — error classifier → jittered backoff →
    model fallback chain → **cross-process rate-limit breaker in Mongo** → per-job iteration+cost

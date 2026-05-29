@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { colors, font, radius, spacing } from '../theme';
 
@@ -39,6 +40,7 @@ export function AskScreen() {
     },
   ]);
   const scrollRef = useRef<ScrollView>(null);
+  const qc = useQueryClient();
 
   const send = async (text: string) => {
     const q = text.trim();
@@ -52,6 +54,11 @@ export function AskScreen() {
         ...m,
         { role: 'pulse', text: r.answer, sources: r.sources },
       ]);
+      // The turn may have taught Pulse something — refresh the learned profile.
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ['profile'] });
+        qc.invalidateQueries({ queryKey: ['overview'] });
+      }, 1200);
     } catch (e) {
       setMessages((m) => [
         ...m,

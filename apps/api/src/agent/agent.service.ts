@@ -4,6 +4,7 @@ import { LlmService } from '../llm/llm.service';
 import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { ContextService } from '../context/context.service';
+import { MemoryService } from '../memory/memory.service';
 import type { CalendarEventDoc } from '../domain/types';
 
 export interface AgentReply {
@@ -20,17 +21,19 @@ export class AgentService {
     private readonly documents: DocumentsService,
     private readonly email: EmailService,
     private readonly context: ContextService,
+    private readonly memory: MemoryService,
   ) {}
 
   // Answers grounded in the user's own life — documents, mail, calendar, nudges.
   async chat(userId: string, message: string): Promise<AgentReply> {
-    const [docs, matters, nudges, events] = await Promise.all([
+    const [docs, matters, nudges, events, profile] = await Promise.all([
       this.documents.search(userId, message, 3),
       this.email.whatMatters(userId),
       this.context.nudges(userId),
       this.persistence
         .getRepo<CalendarEventDoc>('calendar_events')
         .findByUser(userId),
+      this.memory.getProfileText(userId),
     ]);
 
     const upcoming = events
@@ -43,20 +46,25 @@ export class AgentService {
       ...nudges.slice(0, 2).map((n) => ({ type: 'nudge', label: n.title })),
     ];
 
+    const transcript = [{ role: 'user' as const, text: message }];
+
     if (this.llm.live) {
       const ctx = this.buildContext(docs, matters, nudges, upcoming);
+      const profileBlock = profile
+        ? `\n\nWhat you know about this user (their profile):\n${profile}`
+        : '';
       const answer = await this.llm.generate(
         `User asks: "${message}"\n\nHere is everything Pulse knows that's relevant:\n${ctx}\n\nAnswer helpfully and concisely as Pulse, the user's life agent. Reference specifics.`,
-        'You are Pulse, a proactive personal life agent. Be warm, concise, specific. Never invent facts not in the context.',
+        `You are Pulse, a proactive personal life agent. Be warm, concise, specific. Never invent facts not in the context.${profileBlock}`,
       );
+      // Learn from this turn in the background — never blocks the reply.
+      this.memory.reviewAsync(userId, [...transcript, { role: 'pulse', text: answer }]);
       return { answer, sources, mode: 'live' };
     }
 
-    return {
-      answer: this.demoAnswer(message, docs, matters, nudges, upcoming),
-      sources,
-      mode: 'demo',
-    };
+    const answer = this.demoAnswer(message, docs, matters, nudges, upcoming, profile);
+    this.memory.reviewAsync(userId, [...transcript, { role: 'pulse', text: answer }]);
+    return { answer, sources, mode: 'demo' };
   }
 
   private buildContext(
@@ -98,9 +106,21 @@ export class AgentService {
     matters: { subject: string; summary: string }[],
     nudges: { title: string; message: string }[],
     upcoming: CalendarEventDoc[],
+    profile?: string,
   ): string {
     const q = message.toLowerCase();
     const lines: string[] = [];
+
+    // "What do you know about me?" → reflect the learned profile.
+    if (/about me|know about me|who am i|my profile|remember about me/.test(q)) {
+      return profile
+        ? `Here's what I've learned about you so far:\n\n${profile}\n\n(I keep this updated quietly as we talk.)`
+        : "I'm still learning about you. Tell me things like “remember I'm vegetarian” or “my wife's name is Asha” and I'll remember them.";
+    }
+
+    if (profile) {
+      lines.push(`🧠 I remember: ${profile.split('\n')[0].replace(/^- /, '')}`);
+    }
 
     const top = docs[0];
     if (top && (top.score ?? 0) > 0.05) {
