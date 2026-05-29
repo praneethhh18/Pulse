@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { PersistenceService } from '../persistence/persistence.service';
 import { EmailService } from '../email/email.service';
+import { TokenCipher } from '../common/crypto';
 import type { IntegrationDoc } from '../domain/types';
 
 const SCOPES = [
@@ -17,6 +18,7 @@ export class GmailService {
   private readonly clientId?: string;
   private readonly clientSecret?: string;
   private readonly redirectUri: string;
+  private readonly cipher: TokenCipher;
 
   constructor(
     private readonly config: ConfigService,
@@ -28,6 +30,12 @@ export class GmailService {
     this.redirectUri =
       this.config.get<string>('GOOGLE_OAUTH_REDIRECT') ||
       'http://localhost:4000/gmail/callback';
+    this.cipher = new TokenCipher(this.config.get<string>('TOKEN_ENCRYPTION_KEY'));
+    if (this.isConfigured() && !this.cipher.enabled) {
+      this.logger.warn(
+        'TOKEN_ENCRYPTION_KEY not set — OAuth tokens stored unencrypted. Set it before going live.',
+      );
+    }
   }
 
   isConfigured(): boolean {
@@ -68,17 +76,15 @@ export class GmailService {
       /* non-fatal */
     }
 
+    const encrypted = this.cipher.encrypt(tokens);
     const existing = await this.repo().findOne({ userId, provider: 'gmail' });
     if (existing) {
-      await this.repo().update(existing._id, {
-        tokens: tokens as Record<string, unknown>,
-        email,
-      });
+      await this.repo().update(existing._id, { tokens: encrypted, email });
     } else {
       await this.repo().insert({
         userId,
         provider: 'gmail',
-        tokens: tokens as Record<string, unknown>,
+        tokens: encrypted,
         email,
       });
     }
@@ -90,6 +96,13 @@ export class GmailService {
     return !!(await this.repo().findOne({ userId, provider: 'gmail' }));
   }
 
+  // All users with a connected Google account — used by background monitors.
+  async connectedUserIds(): Promise<string[]> {
+    if (!this.isConfigured()) return [];
+    const all = await this.repo().findAll({ provider: 'gmail' });
+    return all.map((i) => i.userId);
+  }
+
   // Returns a valid (auto-refreshed) access token for the user's Google
   // account, persisting any refreshed credentials. Shared by Gmail + Calendar.
   async getAccessToken(userId: string): Promise<string | null> {
@@ -97,12 +110,12 @@ export class GmailService {
     const integ = await this.repo().findOne({ userId, provider: 'gmail' });
     if (!integ) return null;
     const client = this.newClient();
-    client.setCredentials(integ.tokens);
+    client.setCredentials(this.cipher.decrypt(integ.tokens));
     const at = await client.getAccessToken();
     const token = typeof at === 'string' ? at : at?.token;
     if (token) {
       await this.repo().update(integ._id, {
-        tokens: client.credentials as Record<string, unknown>,
+        tokens: this.cipher.encrypt(client.credentials),
       });
     }
     return token ?? null;
@@ -120,19 +133,10 @@ export class GmailService {
 
   // Fetch recent inbox mail, classify + store (dedup by message id).
   async sync(userId: string): Promise<{ fetched: number; added: number }> {
-    if (!this.isConfigured()) return { fetched: 0, added: 0 };
+    const token = await this.getAccessToken(userId);
+    if (!token) return { fetched: 0, added: 0 };
     const integ = await this.repo().findOne({ userId, provider: 'gmail' });
     if (!integ) return { fetched: 0, added: 0 };
-
-    const client = this.newClient();
-    client.setCredentials(integ.tokens);
-    const at = await client.getAccessToken();
-    const token = typeof at === 'string' ? at : at?.token;
-    if (!token) return { fetched: 0, added: 0 };
-    // persist any refreshed tokens
-    await this.repo().update(integ._id, {
-      tokens: client.credentials as Record<string, unknown>,
-    });
 
     const auth = { Authorization: `Bearer ${token}` };
     const listRes = await fetch(

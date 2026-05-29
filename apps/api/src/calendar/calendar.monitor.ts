@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CalendarService } from './calendar.service';
-import { PersistenceService } from '../persistence/persistence.service';
+import { GmailService } from '../gmail/gmail.service';
 
 // Server-side calendar monitoring — keeps Pulse's view of your schedule fresh
 // so the Context Engine can fire scheduling nudges (e.g. early flight after a
@@ -14,7 +14,7 @@ export class CalendarMonitor implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly calendar: CalendarService,
-    private readonly persistence: PersistenceService,
+    private readonly gmail: GmailService,
     private readonly config: ConfigService,
   ) {
     this.intervalMs =
@@ -37,8 +37,12 @@ export class CalendarMonitor implements OnModuleInit, OnModuleDestroy {
 
   private async tick() {
     try {
-      const r = await this.calendar.sync(this.persistence.demoUserId);
-      if (r.added > 0) this.logger.log(`Auto-sync: ${r.added} new event(s)`);
+      const users = await this.gmail.connectedUserIds();
+      for (const userId of users) {
+        const r = await this.calendar.sync(userId);
+        if (r.added > 0)
+          this.logger.log(`Auto-sync ${userId}: ${r.added} new event(s)`);
+      }
     } catch (e) {
       this.logger.error(`Auto-sync failed: ${e}`);
     }

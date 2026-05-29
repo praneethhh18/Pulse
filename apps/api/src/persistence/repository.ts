@@ -17,6 +17,8 @@ export interface ScoredDoc<T> {
 export interface Repository<T extends { _id: string; userId: string }> {
   insert(doc: Omit<T, '_id' | 'createdAt' | 'updatedAt'> & Partial<T>): Promise<T>;
   findByUser(userId: string, filter?: QueryFilter): Promise<T[]>;
+  /** Across all users — use sparingly (e.g. background workers). */
+  findAll(filter?: QueryFilter): Promise<T[]>;
   findOne(filter: QueryFilter): Promise<T | null>;
   update(id: string, patch: Partial<T>): Promise<T | null>;
   /** Semantic search over an `embedding` field, scoped to a user. */
@@ -72,6 +74,10 @@ export class MemoryRepository<T extends { _id: string; userId: string }>
     return this.store.filter(
       (d) => d.userId === userId && matchesFilter(d, filter),
     );
+  }
+
+  async findAll(filter: QueryFilter = {}): Promise<T[]> {
+    return this.store.filter((d) => matchesFilter(d, filter));
   }
 
   async findOne(filter: QueryFilter): Promise<T | null> {
@@ -137,6 +143,10 @@ export class MongoRepository<T extends { _id: string; userId: string }>
       .find({ userId, ...filter } as never)
       .sort({ createdAt: -1 })
       .toArray() as unknown as Promise<T[]>;
+  }
+
+  async findAll(filter: QueryFilter = {}): Promise<T[]> {
+    return this.col.find(filter as never).toArray() as unknown as Promise<T[]>;
   }
 
   async findOne(filter: QueryFilter): Promise<T | null> {

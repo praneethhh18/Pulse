@@ -68,6 +68,8 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [ ] Create Atlas vector index `vector_index` (dim 768, cosine)
 - [ ] Add `GEMINI_API_KEY` → `/health` shows `"ai":"gemini"`
 - [ ] Semantic search + Ask quality improves with real models
+- [ ] Set `TOKEN_ENCRYPTION_KEY` (required: encrypts OAuth tokens at rest)
+- [ ] Keep `SEED_DEMO_DATA=false` on the real DB (no fake data in production)
 - [ ] Add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` → Settings shows Gmail "READY"
 - [ ] Settings → Connect Gmail → authorize → real inbox auto-syncs into Guardian
 - [ ] Same connection → real calendar events sync → scheduling nudges fire

@@ -39,8 +39,12 @@ export class GmailMonitor implements OnModuleInit, OnModuleDestroy {
 
   private async tick() {
     try {
-      const r = await this.gmail.sync(this.persistence.demoUserId);
-      if (r.added > 0) this.logger.log(`Auto-sync: ${r.added} new email(s)`);
+      const users = await this.gmail.connectedUserIds();
+      for (const userId of users) {
+        const r = await this.gmail.sync(userId);
+        if (r.added > 0)
+          this.logger.log(`Auto-sync ${userId}: ${r.added} new email(s)`);
+      }
     } catch (e) {
       this.logger.error(`Auto-sync failed: ${e}`);
     }

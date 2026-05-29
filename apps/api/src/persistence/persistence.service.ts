@@ -52,7 +52,12 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
           .asPromise();
         this.mode = 'mongo';
         this.logger.log(`MongoDB Atlas connected (db: ${dbName})`);
-        await this.seedMongoIfEmpty();
+        // Never auto-seed a real database with demo data. Only when explicitly
+        // opted in (e.g. a throwaway demo cluster).
+        if (this.config.get<string>('SEED_DEMO_DATA') === 'true') {
+          this.logger.warn('SEED_DEMO_DATA=true → inserting demo data into MongoDB');
+          await this.seedMongoIfEmpty();
+        }
         return;
       } catch (e) {
         this.logger.error(`Mongo connect failed → falling back to memory: ${e}`);

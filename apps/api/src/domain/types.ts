@@ -85,7 +85,7 @@ export interface EmailDoc extends BaseDoc {
 export interface IntegrationDoc extends BaseDoc {
   provider: 'gmail';
   email?: string;
-  tokens: Record<string, unknown>; // access/refresh tokens
+  tokens: string; // encrypted (AES-256-GCM) OAuth token blob
   lastSyncAt?: string;
 }
 
