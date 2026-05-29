@@ -1,17 +1,27 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Pulse",
+    "slug": "pulse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "pulse",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#141726",
+    "primaryColor": "#8B73FF",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#141726"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.praneethhh18.pulse"
     },
     "android": {
+      "package": "com.praneethhh18.pulse",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#141726",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -23,7 +33,14 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pulse needs access to your photos so you can attach documents to your vault.",
+          "cameraPermission": "Pulse needs your camera so you can scan documents into your vault."
+        }
+      ]
     ]
   }
 }

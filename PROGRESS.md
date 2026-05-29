@@ -80,11 +80,12 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [x] Document **upload** UI (text + **camera/gallery photo** with OCR-on-Gemini)
 - [x] **Email ingest** UI (paste / sample → live triage)
 - [x] **Settings** tab (connections + system status)
-- [ ] Add document **categories filter** in Vault
+- [x] Add document **categories filter** in Vault (+ pull-to-refresh)
 - [x] **Dismiss/acknowledge nudges** (swipe-away that sticks)
 - [x] More nudge types (needs-action email, busy day)
+- [x] **Branding** — app name "Pulse", dark theme, splash bg, bundle IDs, permissions
+- [ ] Custom app icon artwork (currently default placeholder)
 - [ ] Empty-state + error polish, loading skeletons
-- [ ] App icon + splash screen (branding)
 - [ ] Light theme option / theme toggle
 - [ ] PDF upload (expo-document-picker)
 
@@ -95,7 +96,7 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [ ] Push notifications (FCM) for nudges
 - [ ] Encryption + consent ledger + export/delete
 - [ ] Offline sync (Realm / Atlas Device Sync)
-- [ ] Move to an **EAS development build** (unlocks phone permissions)
+- [ ] Move to an **EAS development build** (unlocks phone permissions) — `eas.json` ready; run `eas build --profile development -p android`
 
 ---
 

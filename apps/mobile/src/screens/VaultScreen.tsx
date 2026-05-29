@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,11 +31,24 @@ const CATEGORY_COLOR: Record<string, string> = {
   other: colors.textFaint,
 };
 
+const FILTERS = [
+  'all',
+  'identity',
+  'medical',
+  'financial',
+  'legal',
+  'educational',
+  'vehicle',
+  'travel',
+  'other',
+] as const;
+
 export function VaultScreen() {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const [cat, setCat] = useState<(typeof FILTERS)[number]>('all');
 
   const all = useQuery({ queryKey: ['documents'], queryFn: api.documents });
   const search = useQuery({
@@ -43,9 +58,9 @@ export function VaultScreen() {
   });
 
   const searching = submitted.length > 0;
-  const data: DocumentItem[] = searching
-    ? search.data ?? []
-    : all.data ?? [];
+  const base: DocumentItem[] = searching ? search.data ?? [] : all.data ?? [];
+  const data: DocumentItem[] =
+    searching || cat === 'all' ? base : base.filter((d) => d.category === cat);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + spacing(3) }}>
@@ -81,7 +96,27 @@ export function VaultScreen() {
           <Text style={styles.resultMeta}>
             {search.isFetching ? 'Searching…' : `Semantic matches for “${submitted}”`}
           </Text>
-        ) : null}
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
+            {FILTERS.map((f) => (
+              <Pressable
+                key={f}
+                onPress={() => setCat(f)}
+                style={[styles.filterChip, cat === f && styles.filterChipActive]}
+              >
+                <Text
+                  style={[styles.filterText, cat === f && styles.filterTextActive]}
+                >
+                  {f}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       {searching && search.isFetching ? (
@@ -91,6 +126,13 @@ export function VaultScreen() {
           data={data}
           keyExtractor={(i) => i._id}
           contentContainerStyle={{ padding: spacing(5), paddingTop: spacing(2), gap: spacing(3) }}
+          refreshControl={
+            <RefreshControl
+              refreshing={all.isFetching && !searching}
+              onRefresh={all.refetch}
+              tintColor={colors.brand}
+            />
+          }
           ListEmptyComponent={
             <EmptyState icon="file-tray" text="No documents found." />
           }
@@ -169,6 +211,18 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, ...font.body, color: colors.text },
   resultMeta: { ...font.small, color: colors.brandSoft, marginTop: spacing(3) },
+  filterRow: { gap: spacing(2), paddingTop: spacing(3), paddingRight: spacing(5) },
+  filterChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing(3.5),
+    paddingVertical: spacing(2),
+  },
+  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  filterText: { ...font.small, color: colors.textDim },
+  filterTextActive: { color: '#0A0A0F', fontWeight: '700' },
   docTop: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
   docIcon: {
     width: 38,
