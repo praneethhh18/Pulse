@@ -12,6 +12,9 @@ const ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   deadline: 'alarm',
   expiry: 'hourglass',
   pattern: 'pulse',
+  'needs-action': 'mail-unread',
+  'busy-day': 'calendar',
+  'profile-prep': 'person-circle',
 };
 
 export function NudgeCard({ nudge }: { nudge: Nudge }) {

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PersistenceService } from '../persistence/persistence.service';
+import { MemoryService } from '../memory/memory.service';
 import type {
   CalendarEventDoc,
   DocumentDoc,
@@ -18,15 +19,19 @@ const DAY = 24 * HOUR;
 
 @Injectable()
 export class ContextService {
-  constructor(private readonly persistence: PersistenceService) {}
+  constructor(
+    private readonly persistence: PersistenceService,
+    private readonly memory: MemoryService,
+  ) {}
 
   async nudges(userId: string): Promise<NudgeDoc[]> {
-    const [emails, documents, events] = await Promise.all([
+    const [emails, documents, events, profile] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence
         .getRepo<CalendarEventDoc>('calendar_events')
         .findByUser(userId),
+      this.memory.getProfileText(userId),
     ]);
 
     const nudges: NudgeDoc[] = [
@@ -35,6 +40,7 @@ export class ContextService {
       ...this.needsAction(userId, emails),
       ...this.documentExpiries(userId, documents),
       ...this.busyDays(userId, events),
+      ...this.profilePrep(userId, profile, events),
     ];
 
     // Hide anything the user has dismissed.
@@ -214,6 +220,68 @@ export class ContextService {
         }),
       );
     }
+    return out;
+  }
+
+  // The Context Engine using MEMORY: connect what Pulse has learned about the
+  // user to an upcoming event, and offer a personalised prep. This is the
+  // grow-with-you profile paying off in the *proactive* surface, not just chat.
+  private profilePrep(
+    userId: string,
+    profile: string,
+    events: CalendarEventDoc[],
+  ): NudgeDoc[] {
+    if (!profile) return [];
+    const facts = profile.split('\n').map((l) => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+    const now = Date.now();
+    const soon = (e: CalendarEventDoc) => {
+      const t = new Date(e.startsAt).getTime();
+      return t > now && t - now < 3 * DAY;
+    };
+
+    const pick = (re: RegExp) => facts.filter((f) => re.test(f.toLowerCase()));
+    const out: NudgeDoc[] = [];
+
+    // Doctor visit + remembered health facts.
+    const doctor = events.find((e) => e.type === 'doctor' && soon(e));
+    const health = pick(/allerg|vegetarian|vegan|dietary|diabet|blood|medication|pressure|health/);
+    if (doctor && health.length) {
+      out.push(
+        this.make(userId, {
+          kind: 'profile-prep',
+          severity: 'info',
+          title: 'Prep for your doctor visit',
+          message: `Before "${doctor.title}" on ${fmtDate(doctor.startsAt)}, want me to bring up what I know about your health? I remember: ${health.join('; ')}.`,
+          reason: 'An upcoming doctor appointment matches health facts in your profile.',
+          sources: [
+            { collection: 'calendar_events', id: doctor._id, label: doctor.title },
+            { collection: 'user_profile', id: 'profile', label: 'What Pulse knows about you' },
+          ],
+          suggestedAction: { label: 'Build my health brief', type: 'briefing' },
+        }),
+      );
+    }
+
+    // Interview + remembered job/skill facts.
+    const interview = events.find((e) => e.type === 'interview' && soon(e));
+    const work = pick(/work|job|engineer|developer|role|skill|company/);
+    if (interview && work.length) {
+      out.push(
+        this.make(userId, {
+          kind: 'profile-prep',
+          severity: 'info',
+          title: 'Prep for your interview',
+          message: `"${interview.title}" is on ${fmtDate(interview.startsAt)}. I can tailor prep to what I know about you: ${work.join('; ')}.`,
+          reason: 'An upcoming interview matches work/skill facts in your profile.',
+          sources: [
+            { collection: 'calendar_events', id: interview._id, label: interview.title },
+            { collection: 'user_profile', id: 'profile', label: 'What Pulse knows about you' },
+          ],
+          suggestedAction: { label: 'Build my interview brief', type: 'briefing' },
+        }),
+      );
+    }
+
     return out;
   }
 

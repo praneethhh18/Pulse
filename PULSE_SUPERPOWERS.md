@@ -76,6 +76,7 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 - **Three memory tiers** kept separate: raw searchable log (Atlas vector) · tiny char-capped profile (always in prompt) · derived narrative user-model. Never conflate. *(M)*
 - **Retain-filter before writes** — a cheap Gemini pass dedups/extracts salient facts before persisting, so memory stays high-signal. *(S)*
 - **Periodic curator** — cron job ages memories/playbooks active→stale→archived (never hard-delete), consolidates overlaps, only touches agent-created data. *(M)*
+- **Context Engine uses the profile** — ✅ **BUILT**. Learned facts now drive *proactive* nudges (e.g. health notes before a doctor visit) and personalise the home greeting, not just chat.
 - **Latency-hiding recall** — run vector search/synthesis in the background after turn N, inject the cached result at turn N+1. *(S)*
 - **Prompt-cache discipline** — stable system prefix; inject recalled memory into the *user turn* (fenced, scrubbed from output), never the system prompt. Cuts cost on every proactive call. *(S)*
 

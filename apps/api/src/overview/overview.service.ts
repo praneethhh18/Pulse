@@ -3,6 +3,7 @@ import { PersistenceService } from '../persistence/persistence.service';
 import { LlmService } from '../llm/llm.service';
 import { ContextService } from '../context/context.service';
 import { EmailService } from '../email/email.service';
+import { MemoryService } from '../memory/memory.service';
 import type {
   CalendarEventDoc,
   DocumentDoc,
@@ -16,10 +17,11 @@ export class OverviewService {
     private readonly llm: LlmService,
     private readonly context: ContextService,
     private readonly email: EmailService,
+    private readonly memory: MemoryService,
   ) {}
 
   async get(userId: string) {
-    const [user, nudges, matters, docs, events] = await Promise.all([
+    const [user, nudges, matters, docs, events, profile] = await Promise.all([
       this.persistence.getRepo<UserDoc>('users').findOne({ userId }),
       this.context.nudges(userId),
       this.email.whatMatters(userId),
@@ -27,7 +29,14 @@ export class OverviewService {
       this.persistence
         .getRepo<CalendarEventDoc>('calendar_events')
         .findByUser(userId),
+      this.memory.getProfileText(userId),
     ]);
+
+    // Prefer the name Pulse has learned over the seed name.
+    const learnedName = profile
+      .split('\n')
+      .map((l) => l.match(/name:\s*(.+)/i)?.[1]?.trim())
+      .find(Boolean);
 
     const upcoming = events
       .filter((e) => new Date(e.startsAt).getTime() > Date.now() - 3600_000)
@@ -35,7 +44,7 @@ export class OverviewService {
       .slice(0, 4);
 
     return {
-      greetingName: user?.name ?? 'there',
+      greetingName: learnedName ?? user?.name ?? 'there',
       mode: {
         storage: this.persistence.mode,
         ai: this.llm.live ? 'gemini' : 'demo',
