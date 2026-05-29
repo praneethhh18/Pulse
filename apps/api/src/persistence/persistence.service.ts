@@ -74,6 +74,10 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     await this.connection?.close();
   }
 
+  listCollections(): CollectionName[] {
+    return [...ALL_COLLECTIONS];
+  }
+
   getRepo<T extends { _id: string; userId: string }>(
     name: CollectionName,
   ): Repository<T> {

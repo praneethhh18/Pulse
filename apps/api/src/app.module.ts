@@ -13,6 +13,7 @@ import { AgentModule } from './agent/agent.module';
 import { OverviewModule } from './overview/overview.module';
 import { GmailModule } from './gmail/gmail.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { PrivacyModule } from './privacy/privacy.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CalendarModule } from './calendar/calendar.module';
     OverviewModule,
     GmailModule,
     CalendarModule,
+    PrivacyModule,
   ],
   controllers: [AppController],
   providers: [

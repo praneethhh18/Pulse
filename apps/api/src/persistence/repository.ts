@@ -21,6 +21,8 @@ export interface Repository<T extends { _id: string; userId: string }> {
   findAll(filter?: QueryFilter): Promise<T[]>;
   findOne(filter: QueryFilter): Promise<T | null>;
   update(id: string, patch: Partial<T>): Promise<T | null>;
+  /** Delete every record belonging to a user. Returns count removed. */
+  deleteByUser(userId: string): Promise<number>;
   /** Semantic search over an `embedding` field, scoped to a user. */
   vectorSearch(
     userId: string,
@@ -91,6 +93,12 @@ export class MemoryRepository<T extends { _id: string; userId: string }>
     return this.store[idx];
   }
 
+  async deleteByUser(userId: string): Promise<number> {
+    const before = this.store.length;
+    this.store = this.store.filter((d) => d.userId !== userId);
+    return before - this.store.length;
+  }
+
   async vectorSearch(
     userId: string,
     queryEmbedding: number[],
@@ -159,6 +167,11 @@ export class MongoRepository<T extends { _id: string; userId: string }>
       { $set: { ...patch, updatedAt: nowIso() } } as never,
     );
     return this.findOne({ _id: id });
+  }
+
+  async deleteByUser(userId: string): Promise<number> {
+    const res = await this.col.deleteMany({ userId } as never);
+    return res.deletedCount ?? 0;
   }
 
   async vectorSearch(

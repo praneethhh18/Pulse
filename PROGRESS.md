@@ -97,7 +97,8 @@ Three sections: **Built**, **To test on device**, **Next to build**.
 - [x] **Google Calendar** integration + auto-monitor — BUILT; same Google connection
 - [ ] Push notifications (FCM) for nudges
 - [x] OAuth token encryption at rest (AES-256-GCM)
-- [ ] Consent ledger UI + export/delete-everything
+- [x] **Export-everything + delete-everything** data controls (Settings → Your data)
+- [ ] Consent ledger UI (toggle/revoke sources)
 - [ ] Offline sync (Realm / Atlas Device Sync)
 - [ ] Move to an **EAS development build** (unlocks phone permissions) — `eas.json` ready; run `eas build --profile development -p android`
 

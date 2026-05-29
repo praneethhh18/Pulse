@@ -32,6 +32,37 @@ export function SettingsScreen() {
     onError: (e) => Alert.alert('Sync failed', (e as Error).message),
   });
 
+  const dataSummary = useQuery({ queryKey: ['data-summary'], queryFn: api.dataSummary });
+
+  const exportMut = useMutation({
+    mutationFn: api.exportData,
+    onSuccess: (r) =>
+      Alert.alert(
+        'Your data is ready',
+        `Exported ${r.totalRecords} records across ${r.categories} categories. (Full file export via the web companion.)`,
+      ),
+    onError: (e) => Alert.alert('Export failed', (e as Error).message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: api.deleteAllData,
+    onSuccess: (r) => {
+      qc.invalidateQueries();
+      Alert.alert('Everything deleted', `${r.total} records permanently removed.`);
+    },
+    onError: (e) => Alert.alert('Delete failed', (e as Error).message),
+  });
+
+  const confirmDelete = () =>
+    Alert.alert(
+      'Delete everything?',
+      'This permanently erases all your documents, emails, calendar and history from Pulse. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete everything', style: 'destructive', onPress: () => deleteMut.mutate() },
+      ],
+    );
+
   const connect = useMutation({
     mutationFn: api.gmailAuthUrl,
     onSuccess: async (r) => {
@@ -202,6 +233,33 @@ export function SettingsScreen() {
         <ModeRow icon="globe" label="API" value={API_URL} ok mono />
       </Card>
 
+      {/* Your data — privacy controls */}
+      <SectionHeader title="Your data" icon="lock-closed" />
+      <Card>
+        <Text style={styles.dataLine}>
+          {dataSummary.data
+            ? `Pulse holds ${dataSummary.data.total} record${dataSummary.data.total === 1 ? '' : 's'} across ${Object.keys(dataSummary.data.counts).length} categor${Object.keys(dataSummary.data.counts).length === 1 ? 'y' : 'ies'}.`
+            : 'Your data, in your control.'}
+        </Text>
+        <Text style={styles.dataNote}>
+          Your data is yours. Export it anytime, or erase it permanently.
+        </Text>
+
+        <Pressable onPress={() => exportMut.mutate()} style={[styles.outlineBtn, { marginTop: spacing(3) }]}>
+          <Ionicons name="download" size={15} color={colors.brandSoft} />
+          <Text style={styles.outlineText}>
+            {exportMut.isPending ? 'Preparing…' : 'Export my data'}
+          </Text>
+        </Pressable>
+
+        <Pressable onPress={confirmDelete} style={[styles.dangerBtn, { marginTop: spacing(2) }]}>
+          <Ionicons name="trash" size={15} color={colors.critical} />
+          <Text style={styles.dangerText}>
+            {deleteMut.isPending ? 'Deleting…' : 'Delete everything'}
+          </Text>
+        </Pressable>
+      </Card>
+
       <View style={[styles.banner, { borderColor: live ? colors.success : colors.warning }]}>
         <Ionicons
           name={live ? 'shield-checkmark' : 'flask'}
@@ -305,6 +363,19 @@ const styles = StyleSheet.create({
   },
   outlineText: { ...font.small, color: colors.brandSoft, fontWeight: '700' },
   note: { ...font.small, color: colors.textFaint, marginTop: spacing(2), lineHeight: 18 },
+  dataLine: { ...font.body, color: colors.text, fontWeight: '600' },
+  dataNote: { ...font.small, color: colors.textDim, marginTop: spacing(1), lineHeight: 18 },
+  dangerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(2),
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,134,0.5)',
+    paddingVertical: spacing(3),
+  },
+  dangerText: { ...font.small, color: colors.critical, fontWeight: '700' },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing(3) },
   modeLabel: { ...font.body, color: colors.textDim },
   modeValue: { ...font.small, color: colors.text, fontWeight: '600', maxWidth: '60%' },

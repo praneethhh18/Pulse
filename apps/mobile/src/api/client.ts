@@ -66,6 +66,12 @@ export const api = {
     req<{ configured: boolean; connected: boolean }>('/calendar/status'),
   calendarSync: () =>
     req<{ fetched: number; added: number }>('/calendar/sync', { method: 'POST' }),
+  dataSummary: () =>
+    req<{ counts: Record<string, number>; total: number }>('/me/data'),
+  exportData: () =>
+    req<{ totalRecords: number; categories: number; exportedAt: string }>('/me/export'),
+  deleteAllData: () =>
+    req<{ ok: boolean; total: number }>('/me', { method: 'DELETE' }),
 };
 
 export { API_URL };
