@@ -29,6 +29,7 @@ const ALL_COLLECTIONS: CollectionName[] = [
   'relationship_memory',
   'integrations',
   'user_profile',
+  'provider_state',
 ];
 
 @Injectable()

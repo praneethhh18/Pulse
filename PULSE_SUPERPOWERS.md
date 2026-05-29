@@ -19,11 +19,11 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
    injected into the agent so it personalises answers; shown in Settings → "What Pulse has learned
    about you". Files: `apps/api/src/memory/`. *(Next: latency-hiding recall + periodic curator.)*
 
-2. **⚙️ Reliability/cost spine for unattended calls** — error classifier → jittered backoff →
-   model fallback chain → **cross-process rate-limit breaker in Mongo** → per-job iteration+cost
-   budget. Pulse fires many background/proactive calls; without this, one throttle event
-   cascades and bills silently. *Effort: M.* Port Hermes' `error_classifier` + `retry_utils` to
-   a `withRetry()` wrapper; a `provider_state` collection records `resetAt` so all workers back off.
+2. **⚙️ Reliability/cost spine for unattended calls** — ✅ **BUILT** (error classifier · jittered
+   backoff · model fallback chain · **cross-process rate-limit breaker in Mongo** `provider_state`).
+   Every Gemini call (generate/ocr/embed) now retries transient errors, switches to a fallback model
+   on rate-limit/overload, and trips a shared breaker so all workers back off. Files:
+   `apps/api/src/llm/resilience.ts` + `llm.service.ts`. *(Next: per-job iteration+cost budget + output budgeting.)*
 
 3. **🛡️ Tiered action-approval gate with a hardline floor** — classify every side-effecting
    action (send email, pay, delete, post) into `auto / confirm / hardline-blocked`. Hardline

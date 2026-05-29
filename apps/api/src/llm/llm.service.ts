@@ -2,7 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { hashEmbed } from './embeddings';
-import type { EmailUrgency } from '../domain/types';
+import { PersistenceService } from '../persistence/persistence.service';
+import {
+  FailoverReason,
+  RETRYABLE,
+  classifyGeminiError,
+  jitteredBackoffMs,
+  sleep,
+} from './resilience';
+import type { EmailUrgency, ProviderStateDoc } from '../domain/types';
 
 export interface EmailClassification {
   summary: string;
@@ -20,28 +28,125 @@ export class LlmService {
   private gemini?: GoogleGenerativeAI;
   private readonly model: string;
   private readonly embedModel: string;
+  private readonly fallbackModels: string[];
+  private readonly maxRetries: number;
   readonly live: boolean;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly persistence: PersistenceService,
+  ) {
     const key = this.config.get<string>('GEMINI_API_KEY');
     this.model = this.config.get<string>('GEMINI_MODEL') || 'gemini-2.5-pro';
     this.embedModel =
       this.config.get<string>('GEMINI_EMBED_MODEL') || 'text-embedding-004';
+    this.fallbackModels = (this.config.get<string>('GEMINI_FALLBACK_MODELS') || '')
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
+    this.maxRetries = Number(this.config.get('LLM_MAX_RETRIES') ?? 3);
     this.live = !!key;
     if (this.live) {
       this.gemini = new GoogleGenerativeAI(key as string);
-      this.logger.log(`LLM live — model ${this.model}`);
+      this.logger.log(
+        `LLM live — ${this.model}${this.fallbackModels.length ? ` (fallbacks: ${this.fallbackModels.join(', ')})` : ''}`,
+      );
     } else {
       this.logger.warn('LLM in DEMO MODE (no GEMINI_API_KEY) — mock intelligence');
     }
   }
 
+  // ─── Resilience layer (retry + model fallback + cross-process breaker) ───
+  private breakerRepo() {
+    return this.persistence.getRepo<ProviderStateDoc>('provider_state');
+  }
+
+  private async isBroken(model: string): Promise<boolean> {
+    const s = await this.breakerRepo().findOne({ model });
+    return !!s && new Date(s.resetAt).getTime() > Date.now();
+  }
+
+  private async trip(model: string, ms: number, reason: string): Promise<void> {
+    const resetAt = new Date(Date.now() + ms).toISOString();
+    const existing = await this.breakerRepo().findOne({ model });
+    if (existing) await this.breakerRepo().update(existing._id, { resetAt, reason });
+    else await this.breakerRepo().insert({ userId: '_system', model, resetAt, reason });
+    this.logger.warn(`breaker tripped for ${model} (${reason}) until ${resetAt}`);
+  }
+
+  private cooldownMs(reason: FailoverReason): number {
+    if (reason === FailoverReason.BILLING) return 5 * 60_000;
+    if (reason === FailoverReason.RATE_LIMIT) return 60_000;
+    return 20_000; // overloaded
+  }
+
+  // Runs a generation across the model chain: retry transient errors with
+  // jittered backoff, switch model on rate-limit/billing/overload, trip the
+  // shared breaker so other workers back off too.
+  private async runGeneration(call: (model: string) => Promise<string>): Promise<string> {
+    const models = [this.model, ...this.fallbackModels];
+    let lastErr: unknown;
+    for (const model of models) {
+      if (await this.isBroken(model)) {
+        this.logger.warn(`skipping ${model} — breaker open`);
+        continue;
+      }
+      for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        try {
+          return await call(model);
+        } catch (e) {
+          lastErr = e;
+          const reason = classifyGeminiError(e);
+          this.logger.warn(`gemini ${model} ${reason} (attempt ${attempt}/${this.maxRetries})`);
+          if (
+            reason === FailoverReason.SAFETY_BLOCKED ||
+            reason === FailoverReason.AUTH ||
+            reason === FailoverReason.CONTEXT_OVERFLOW
+          ) {
+            throw e; // unrecoverable — don't retry or switch
+          }
+          if (reason === FailoverReason.RATE_LIMIT || reason === FailoverReason.BILLING) {
+            await this.trip(model, this.cooldownMs(reason), reason);
+            break; // straight to next model
+          }
+          if (RETRYABLE.has(reason) && attempt < this.maxRetries) {
+            await sleep(jitteredBackoffMs(attempt));
+            continue;
+          }
+          if (reason === FailoverReason.OVERLOADED) {
+            await this.trip(model, this.cooldownMs(reason), reason);
+          }
+          break; // exhausted / model_not_found → next model
+        }
+      }
+    }
+    throw lastErr ?? new Error('All models exhausted');
+  }
+
+  private async runWithRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (e) {
+        lastErr = e;
+        const reason = classifyGeminiError(e);
+        if (!RETRYABLE.has(reason) || attempt === this.maxRetries) throw e;
+        this.logger.warn(`${label} ${reason} — retrying (${attempt})`);
+        await sleep(jitteredBackoffMs(attempt));
+      }
+    }
+    throw lastErr;
+  }
+
   async embed(text: string): Promise<number[]> {
     if (this.gemini) {
       try {
-        const m = this.gemini.getGenerativeModel({ model: this.embedModel });
-        const r = await m.embedContent(text);
-        return r.embedding.values;
+        return await this.runWithRetry('embed', async () => {
+          const m = this.gemini!.getGenerativeModel({ model: this.embedModel });
+          const r = await m.embedContent(text);
+          return r.embedding.values;
+        });
       } catch (e) {
         this.logger.error(`embed failed, falling back to mock: ${e}`);
       }
@@ -54,14 +159,16 @@ export class LlmService {
   async ocrImage(base64: string, mimeType: string): Promise<string> {
     if (this.gemini) {
       try {
-        const m = this.gemini.getGenerativeModel({ model: this.model });
-        const r = await m.generateContent([
-          { inlineData: { data: base64, mimeType } },
-          {
-            text: 'Extract all readable text from this document image. Return only the extracted text, no commentary.',
-          },
-        ]);
-        return r.response.text().trim();
+        return await this.runGeneration(async (model) => {
+          const m = this.gemini!.getGenerativeModel({ model });
+          const r = await m.generateContent([
+            { inlineData: { data: base64, mimeType } },
+            {
+              text: 'Extract all readable text from this document image. Return only the extracted text, no commentary.',
+            },
+          ]);
+          return r.response.text().trim();
+        });
       } catch (e) {
         this.logger.error(`ocrImage failed: ${e}`);
       }
@@ -72,12 +179,14 @@ export class LlmService {
   async generate(prompt: string, system?: string): Promise<string> {
     if (this.gemini) {
       try {
-        const m = this.gemini.getGenerativeModel({
-          model: this.model,
-          systemInstruction: system,
+        return await this.runGeneration(async (model) => {
+          const m = this.gemini!.getGenerativeModel({
+            model,
+            systemInstruction: system,
+          });
+          const r = await m.generateContent(prompt);
+          return r.response.text();
         });
-        const r = await m.generateContent(prompt);
-        return r.response.text();
       } catch (e) {
         this.logger.error(`generate failed, falling back to mock: ${e}`);
       }

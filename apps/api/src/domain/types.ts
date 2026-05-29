@@ -18,7 +18,8 @@ export type CollectionName =
   | 'call_intelligence'
   | 'relationship_memory'
   | 'integrations'
-  | 'user_profile';
+  | 'user_profile'
+  | 'provider_state';
 
 export interface BaseDoc {
   _id: string;
@@ -90,6 +91,15 @@ export interface UserProfileDoc extends BaseDoc {
   content: string; // bulleted durable facts about the user
   turnCount: number; // how many turns observed
   lastReviewedAt?: string;
+}
+
+// Cross-process rate-limit breaker: when a model is throttled, every worker
+// (API, cron monitors, background memory loop) reads this and backs off instead
+// of piling onto the throttled provider (Hermes' nous_rate_guard, in Mongo).
+export interface ProviderStateDoc extends BaseDoc {
+  model: string;
+  resetAt: string; // ISO — don't use this model until then
+  reason: string;
 }
 
 // Stored OAuth connection to an external account (Gmail, later Calendar, etc.)
