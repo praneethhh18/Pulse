@@ -131,6 +131,41 @@ MongoDB Atlas + Gemini + React Native). Tags: 🧠 intelligence · 🛡️ safet
 
 ---
 
+---
+
+## 🔬 Round-3 findings (production-ops & UX layers Hermes nails)
+
+A third deep pass surfaced subsystems the first two missed. Highest-value first.
+
+### Must-do once live (cost, trust, correctness)
+- **🕐 Always-aware user-zone time** — `now(userId)` resolves the user's IANA timezone (profile → device → server), **never naive**, safe fallback on bad tz. *Non-negotiable for a life-agent* — firing "good morning" at 3am or a reminder in the wrong zone destroys trust instantly. Store UTC instant + tz, compute display. *(S, do early)* `hermes_time.py`.
+- **💸 Prompt-caching discipline** — immutable cached system prefix, **date-only timestamp** (not minute — else cache busts every turn), volatility-ordered tiers (stable→context→volatile), per-turn dynamic steering appended *after* the cached block. Maps directly to Gemini `cachedContents`. Biggest per-call cost win when live. *(M)* `agent/system_prompt.py`, `prompt_caching.py`.
+- **🔭 Hook-based, fail-open tracing** — trace each run as root→generation→tool spans; **deterministic trace id from `userId:runId`** so retries collapse; an observability outage never breaks the agent. Langfuse has a TS SDK. Essential for debugging unattended background calls. *(M)* `plugins/observability/langfuse`.
+- **💰 Per-run cost accounting with confidence status** — `{input,output,cacheRead,cacheWrite}` token buckets + `CostResult{amountUsd, status: actual|estimated|included|unknown}`, persisted to a Mongo `runs` collection, `$group` dashboards. **Return `unknown` over a fabricated number.** Use `decimal.js`. *(M)* `agent/usage_pricing.py`.
+- **🧾 Request-context logging + secret redaction** — bind `{userId,runId,feature}` to every log via `AsyncLocalStorage`/`nestjs-cls`; redact secret-shaped strings (API keys, JWTs, connection strings, phone numbers) from logs **and** any tool output entering a Gemini prompt. Pulse handles far more PII than a coding agent. *(M)* `hermes_logging.py`, `agent/redact.py`.
+
+### Trust & UX
+- **↩️ Transparent checkpoint / one-tap undo** — snapshot user state before any mutation; reversible undo; **"undo the undo"** (snapshot before restoring); **couple state-undo with conversational-context undo** so the agent doesn't "remember" doing something it reverted. The trust accelerator. *(M)* `tools/checkpoint_manager.py`.
+- **💡 Contextual one-time onboarding hints** — no setup wizard; fire one just-in-time tip the first time a user hits each behavior (first nudge, first autonomous action, first quiet-hours mute), persisted per-user, never repeated, naming the exact control to change it. *(S, high ROI)* `agent/onboarding.py`.
+- **⌨️ Single command registry** — one declarative `CommandDef[]` as source of truth; RN renders quick-action chips from the same list the backend dispatches. *(S–M)* `hermes_cli/commands.py`.
+
+### Engineering foundation
+- **🧪 Test foundation** — hermetic bootstrap (scrub credential env vars, `TZ=UTC`, `mongodb-memory-server`, fake timers); **mock Gemini at the client seam** + push prompt-building/parsing/redaction into pure functions; integration tests with `supertest` + ephemeral Mongo. Pulse is thin on tests — this is the highest-leverage quality move. *(M)* `tests/conftest.py`.
+- **🔁 Background-job primitives** — atomic claim via Mongo `findOneAndUpdate({status:'ready'},…)`, heartbeat + claim-TTL reclaim of crashed jobs, consecutive-failure circuit breaker, separate `taskRuns` audit collection. Storage-agnostic; makes proactive work survivable. *(M)* `hermes_cli/kanban_db.py` (primitives only).
+- **🛡️ Anti-hallucination ID validation** — when the agent claims it created/affected a record, verify the ID against the DB before accepting; on mismatch throw a *retryable* structured error that tells the model how to recover. *(S)* `tools/kanban_tools.py` `HallucinatedCardsError`.
+- **📡 One typed streaming event contract** shared by web + mobile (`message.delta`/`tool.start`/`approval.request`…) when streaming is added. *(M)*
+- **⚙️ Layered validated config** — defaults → per-user Mongo overrides → env, `zod` validation with actionable errors, cached on `updatedAt`. *(M)*
+- **🏅 Retroactive achievements** (post-launch polish) — mine the activity log for tiered badges with secret/discovered states; **design the activity log now** so it's mine-able later. *(L)*
+
+### Deferred-tool disclosure
+- `tool_search`/`tool_describe`/`tool_call` bridges that hide tools from the model array until needed, gated above ~10% of context. *Only worth it past ~15 tools* — skip until then. *(M, later)*
+
+### Honestly skip for Pulse (overkill / not applicable)
+- **ACP editor adapter** (no editor client), **full kanban fleet** (worker subprocesses/profiles/swarm — take primitives only), **frontend plugin system with SRI** (single-product companion), **per-file test runner** (NestJS DI avoids the global-state problem), **pluggable compaction-strategy ABC** (one summarizer is enough now), **provider-quota polling** (use GCP budget alerts instead), **managed log-rotation handler** (log to stdout→aggregator).
+- *Note:* Hermes' own `context_engine` plugin is a **history-compaction strategy**, NOT a cross-domain reasoner — orthogonal to Pulse's Context Engine; don't conflate them.
+
+---
+
 *This is a menu, not a commitment. Pulse already has: vector search, Gemini (LLM+vision OCR+embeddings),
 Gmail/Calendar auto-fetch, encrypted tokens, multi-user auth, privacy controls, cloud storage, and the
 security/deploy spine. The items above are what turn it from "very good" into a genuinely category-defining
