@@ -3,6 +3,7 @@ import type {
   AgentReply,
   DocumentItem,
   EmailItem,
+  FinanceSummary,
   HealthSummary,
   Nudge,
   Overview,
@@ -123,6 +124,13 @@ export const api = {
     }),
   completeFollowUp: (id: string, fid: string) =>
     req<Person>(`/people/${id}/followups/${fid}/done`, { method: 'POST' }),
+  financeSummary: () => req<FinanceSummary>('/me/finance/summary'),
+  addTransaction: (body: {
+    amount: number;
+    category: string;
+    merchant: string;
+    direction?: 'debit' | 'credit';
+  }) => req('/me/finance/transactions', { method: 'POST', body: JSON.stringify(body) }),
   healthSummary: () => req<HealthSummary>('/me/health/summary'),
   addHealthRecord: (body: {
     kind: 'vital' | 'medication' | 'symptom';

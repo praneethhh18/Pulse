@@ -110,6 +110,18 @@ export interface IntegrationDoc extends BaseDoc {
   lastSyncAt?: string;
 }
 
+// Financial Pulse (vision §3.7) — spend awareness without spreadsheets.
+export type TxnDirection = 'debit' | 'credit';
+export interface TransactionDoc extends BaseDoc {
+  amount: number; // positive, INR
+  direction: TxnDirection;
+  category: string;
+  merchant: string;
+  occurredAt: string; // ISO
+  recurring?: boolean;
+  notes?: string;
+}
+
 // Relationship Memory (vision §3.10) — be the person who always remembers.
 export interface ImportantDate {
   label: string; // "Birthday", "Anniversary"

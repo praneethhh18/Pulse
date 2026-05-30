@@ -3,12 +3,14 @@ import { randomUUID } from 'crypto';
 import { PersistenceService } from '../persistence/persistence.service';
 import { MemoryService } from '../memory/memory.service';
 import { fmtDate, fmtTime } from '../common/time.util';
+import { formatInr, spendByCategory } from '../common/finance.util';
 import type {
   CalendarEventDoc,
   DocumentDoc,
   EmailDoc,
   NudgeDoc,
   PersonDoc,
+  TransactionDoc,
 } from '../domain/types';
 
 // ─── The Context Engine ──────────────────────────────────────────────────
@@ -27,7 +29,7 @@ export class ContextService {
   ) {}
 
   async nudges(userId: string, tz = 'Asia/Kolkata'): Promise<NudgeDoc[]> {
-    const [emails, documents, events, profile, people] = await Promise.all([
+    const [emails, documents, events, profile, people, transactions] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence
@@ -35,6 +37,9 @@ export class ContextService {
         .findByUser(userId),
       this.memory.getProfileText(userId),
       this.persistence.getRepo<PersonDoc>('relationship_memory').findByUser(userId),
+      this.persistence
+        .getRepo<TransactionDoc>('financial_transactions')
+        .findByUser(userId),
     ]);
 
     const nudges: NudgeDoc[] = [
@@ -45,6 +50,7 @@ export class ContextService {
       ...this.busyDays(userId, events, tz),
       ...this.profilePrep(userId, profile, events, tz),
       ...this.relationshipNudges(userId, people),
+      ...this.spendingNudges(userId, transactions),
     ];
 
     // Hide anything the user has dismissed.
@@ -293,6 +299,37 @@ export class ContextService {
     }
 
     return out;
+  }
+
+  // Financial Pulse (vision §3.7): spot a category where spend jumped vs the
+  // prior period — "you've spent 43% more on food delivery this month".
+  private spendingNudges(userId: string, txns: TransactionDoc[]): NudgeDoc[] {
+    if (!txns.length) return [];
+    const recent = spendByCategory(txns, 30, 0);
+    const prior = spendByCategory(txns, 60, 30);
+
+    let best: { category: string; pct: number; amount: number } | null = null;
+    for (const [category, amount] of recent) {
+      const last = prior.get(category) ?? 0;
+      if (last <= 0 || amount < 1000) continue; // ignore tiny/new categories
+      const pct = Math.round(((amount - last) / last) * 100);
+      if (pct >= 25 && (!best || pct > best.pct)) best = { category, pct, amount };
+    }
+    if (!best) return [];
+
+    return [
+      this.make(userId, {
+        kind: 'spending',
+        severity: 'warning',
+        title: `Spending up on ${best.category}`,
+        message: `You've spent ${best.pct}% more on ${best.category.toLowerCase()} in the last 30 days (${formatInr(best.amount)}) than the 30 before. Want to set a limit?`,
+        reason: `${best.category} spend rose ${best.pct}% versus the previous 30-day period.`,
+        sources: [
+          { collection: 'financial_transactions', id: `spend-${best.category}`, label: best.category },
+        ],
+        suggestedAction: { label: 'Set a budget', type: 'budget' },
+      }),
+    ];
   }
 
   // Relationship Memory (vision §3.10): remember people, surface their important

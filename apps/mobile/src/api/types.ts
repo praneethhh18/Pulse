@@ -97,3 +97,11 @@ export interface HealthSummary {
   medications: { name: string; value?: string; notes?: string; notedAt: string }[];
   symptoms: { name: string; notes?: string; notedAt: string }[];
 }
+
+export interface FinanceSummary {
+  windowDays: number;
+  total: number;
+  categories: { name: string; amount: number; lastPeriod: number; deltaPct: number | null }[];
+  subscriptions: { merchant: string; amount: number; category: string }[];
+  topCategory?: string;
+}

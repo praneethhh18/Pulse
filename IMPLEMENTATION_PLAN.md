@@ -20,6 +20,7 @@
 - **Connect:** Context Engine — cross-domain, explainable, dismissible nudges; **profile-aware** prep nudges; **relationship** nudges (birthdays/anniversaries + follow-ups).
 - **Remember people:** **Relationship Memory** (§3.10) — people, notes, important dates, follow-ups; drives proactive birthday/follow-up nudges.
 - **Track:** **Health Companion** (§3.6) — log vitals/medications/symptoms, latest readings + trends; feeds doctor briefings.
+- **Money:** **Financial Pulse** (§3.7, demo) — spend by category over rolling 30-day windows, subscriptions, and a proactive "spent N% more on X" nudge (real bank sync via Plaid/Account-Aggregator is the live-only add-on).
 - **Prepare:** **Offline Life Briefing** (event + docs + profile → prepared brief).
 - **Act:** **one-tap AI reply drafting** (personalised, never sends).
 - **Trust/ops:** Firebase Auth (multi-user, dormant), encrypted OAuth tokens, **export/delete-everything** privacy controls, GCS file storage (inline fallback), helmet/CORS/rate-limit/global-error-filter, **user-timezone-aware time** everywhere, Dockerfile + Cloud Run deploy guide.

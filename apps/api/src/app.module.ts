@@ -20,6 +20,7 @@ import { MemoryModule } from './memory/memory.module';
 import { BriefingModule } from './briefing/briefing.module';
 import { HealthCompanionModule } from './health/health.module';
 import { RelationshipsModule } from './relationships/relationships.module';
+import { FinanceModule } from './finance/finance.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { RelationshipsModule } from './relationships/relationships.module';
     BriefingModule,
     HealthCompanionModule,
     RelationshipsModule,
+    FinanceModule,
   ],
   controllers: [AppController],
   providers: [

@@ -24,6 +24,7 @@ import {
 import { NudgeCard } from '../components/NudgeCard';
 import { BriefingSheet } from '../components/BriefingSheet';
 import { PeopleSheet } from '../components/PeopleSheet';
+import { MoneySheet } from '../components/MoneySheet';
 import { useI18n } from '../i18n';
 import type { CalendarEvent, MatterEmail } from '../api/types';
 import { API_URL } from '../config';
@@ -41,6 +42,7 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [briefEventId, setBriefEventId] = useState<string | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [moneyOpen, setMoneyOpen] = useState(false);
   const { t } = useI18n();
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
 
@@ -79,6 +81,9 @@ export function HomeScreen() {
           </View>
           <Text style={styles.brandText}>PULSE</Text>
           <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setMoneyOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
+            <Ionicons name="wallet" size={20} color={colors.brandSoft} />
+          </Pressable>
           <Pressable onPress={() => setPeopleOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
             <Ionicons name="people" size={20} color={colors.brandSoft} />
           </Pressable>
@@ -142,6 +147,7 @@ export function HomeScreen() {
     </ScrollView>
     <BriefingSheet eventId={briefEventId} onClose={() => setBriefEventId(null)} />
     <PeopleSheet visible={peopleOpen} onClose={() => setPeopleOpen(false)} />
+    <MoneySheet visible={moneyOpen} onClose={() => setMoneyOpen(false)} />
     </>
   );
 }

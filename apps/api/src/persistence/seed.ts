@@ -6,6 +6,7 @@ import type {
   EmailDoc,
   HealthRecordDoc,
   PersonDoc,
+  TransactionDoc,
   UserDoc,
 } from '../domain/types';
 
@@ -52,6 +53,27 @@ export interface SeedData {
   calendar_events: CalendarEventDoc[];
   health_records: HealthRecordDoc[];
   relationship_memory: PersonDoc[];
+  financial_transactions: TransactionDoc[];
+}
+
+function txn(
+  userId: string,
+  amount: number,
+  direction: TransactionDoc['direction'],
+  category: string,
+  merchant: string,
+  daysAgo: number,
+  recurring = false,
+): TransactionDoc {
+  return {
+    ...base(userId),
+    amount,
+    direction,
+    category,
+    merchant,
+    occurredAt: iso(daysFromNow(-daysAgo, 12, 0)),
+    recurring,
+  };
 }
 
 function health(
@@ -252,6 +274,32 @@ export function buildSeed(userId: string): SeedData {
     },
   ];
 
+  const financial_transactions: TransactionDoc[] = [
+    // Income
+    txn(userId, 90000, 'credit', 'Income', 'Salary', 1),
+    // Food delivery — up ~43% in the last 30 days vs the 30 before (the nudge)
+    txn(userId, 750, 'debit', 'Food delivery', 'Swiggy', 2),
+    txn(userId, 700, 'debit', 'Food delivery', 'Zomato', 8),
+    txn(userId, 700, 'debit', 'Food delivery', 'Swiggy', 15),
+    txn(userId, 800, 'debit', 'Food delivery', 'Zomato', 38),
+    txn(userId, 700, 'debit', 'Food delivery', 'Swiggy', 48),
+    // Bills (rent recurring)
+    txn(userId, 28000, 'debit', 'Bills', 'Apartment rent', 3, true),
+    txn(userId, 28000, 'debit', 'Bills', 'Apartment rent', 33, true),
+    txn(userId, 1800, 'debit', 'Bills', 'Electricity', 6),
+    // Entertainment (Netflix recurring)
+    txn(userId, 499, 'debit', 'Entertainment', 'Netflix', 15, true),
+    txn(userId, 499, 'debit', 'Entertainment', 'Netflix', 45, true),
+    // Transport
+    txn(userId, 700, 'debit', 'Transport', 'Uber', 5),
+    txn(userId, 500, 'debit', 'Transport', 'Uber', 20),
+    txn(userId, 1100, 'debit', 'Transport', 'Uber', 40),
+    // Shopping + Health
+    txn(userId, 1500, 'debit', 'Shopping', 'Amazon', 10),
+    txn(userId, 1400, 'debit', 'Shopping', 'Myntra', 42),
+    txn(userId, 600, 'debit', 'Health', 'Apollo Pharmacy', 4),
+  ];
+
   return {
     users: [user],
     documents,
@@ -259,5 +307,6 @@ export function buildSeed(userId: string): SeedData {
     calendar_events,
     health_records,
     relationship_memory,
+    financial_transactions,
   };
 }
