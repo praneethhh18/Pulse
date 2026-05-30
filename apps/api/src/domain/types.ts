@@ -110,6 +110,27 @@ export interface IntegrationDoc extends BaseDoc {
   lastSyncAt?: string;
 }
 
+// Relationship Memory (vision §3.10) — be the person who always remembers.
+export interface ImportantDate {
+  label: string; // "Birthday", "Anniversary"
+  date: string; // ISO date (year ignored for recurring)
+}
+export interface FollowUp {
+  id: string;
+  text: string;
+  dueAt?: string; // ISO
+  done: boolean;
+  createdAt: string;
+}
+export interface PersonDoc extends BaseDoc {
+  name: string;
+  relation?: string; // wife, friend, manager…
+  notes: string[]; // things they mentioned / details to remember
+  importantDates: ImportantDate[];
+  followUps: FollowUp[];
+  lastInteractionAt?: string;
+}
+
 // Health Companion (vision §3.6) — vitals, medications, symptoms over time.
 export type HealthKind = 'vital' | 'medication' | 'symptom';
 export interface HealthRecordDoc extends BaseDoc {

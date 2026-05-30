@@ -8,6 +8,7 @@ import type {
   DocumentDoc,
   EmailDoc,
   NudgeDoc,
+  PersonDoc,
 } from '../domain/types';
 
 // ─── The Context Engine ──────────────────────────────────────────────────
@@ -26,13 +27,14 @@ export class ContextService {
   ) {}
 
   async nudges(userId: string, tz = 'Asia/Kolkata'): Promise<NudgeDoc[]> {
-    const [emails, documents, events, profile] = await Promise.all([
+    const [emails, documents, events, profile, people] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence
         .getRepo<CalendarEventDoc>('calendar_events')
         .findByUser(userId),
       this.memory.getProfileText(userId),
+      this.persistence.getRepo<PersonDoc>('relationship_memory').findByUser(userId),
     ]);
 
     const nudges: NudgeDoc[] = [
@@ -42,6 +44,7 @@ export class ContextService {
       ...this.documentExpiries(userId, documents, tz),
       ...this.busyDays(userId, events, tz),
       ...this.profilePrep(userId, profile, events, tz),
+      ...this.relationshipNudges(userId, people),
     ];
 
     // Hide anything the user has dismissed.
@@ -292,6 +295,56 @@ export class ContextService {
     return out;
   }
 
+  // Relationship Memory (vision §3.10): remember people, surface their important
+  // dates and your open follow-ups before you forget them.
+  private relationshipNudges(userId: string, people: PersonDoc[]): NudgeDoc[] {
+    const now = Date.now();
+    const out: NudgeDoc[] = [];
+
+    for (const person of people) {
+      // Upcoming birthdays / anniversaries (recurring yearly).
+      for (const d of person.importantDates ?? []) {
+        const days = daysUntilRecurring(d.date);
+        if (days < 0 || days > 14) continue;
+        const note = (person.notes ?? [])[0];
+        const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
+        out.push(
+          this.make(userId, {
+            kind: `rel-date-${d.label.toLowerCase()}`,
+            severity: days <= 2 ? 'warning' : 'info',
+            title: `${person.name}'s ${d.label} ${when}`,
+            message: `${person.name}'s ${d.label.toLowerCase()} is ${when}.${note ? ` You noted: ${note}.` : ''} Want a gift idea or a message drafted?`,
+            reason: `A saved ${d.label.toLowerCase()} for ${person.name} is within two weeks.`,
+            sources: [{ collection: 'relationship_memory', id: person._id, label: person.name }],
+            suggestedAction: { label: 'Plan something', type: 'relationship' },
+          }),
+        );
+      }
+
+      // Open follow-ups due soon or overdue.
+      for (const f of person.followUps ?? []) {
+        if (f.done) continue;
+        const due = f.dueAt ? new Date(f.dueAt).getTime() : undefined;
+        const overdue = due !== undefined && due < now;
+        const soon = due !== undefined && due - now < 7 * DAY;
+        const stale = due === undefined && now - new Date(f.createdAt).getTime() > 3 * DAY;
+        if (!overdue && !soon && !stale) continue;
+        out.push(
+          this.make(userId, {
+            kind: 'rel-followup',
+            severity: overdue ? 'warning' : 'info',
+            title: overdue ? `Overdue: follow up with ${person.name}` : `Follow up with ${person.name}`,
+            message: `You meant to: ${f.text}.${overdue ? ' This is past due.' : ''}`,
+            reason: `An open follow-up for ${person.name}${f.dueAt ? ' is due' : ' has been pending'}.`,
+            sources: [{ collection: 'relationship_memory', id: f.id, label: person.name }],
+            suggestedAction: { label: 'Mark done', type: 'followup-done' },
+          }),
+        );
+      }
+    }
+    return out;
+  }
+
   private make(
     userId: string,
     n: Omit<
@@ -312,4 +365,15 @@ export class ContextService {
       ...n,
     };
   }
+}
+
+// Days until the next yearly occurrence of a date (birthday/anniversary).
+function daysUntilRecurring(iso: string): number {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return -1;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let next = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+  if (next.getTime() < today.getTime()) next = new Date(now.getFullYear() + 1, d.getMonth(), d.getDate());
+  return Math.round((next.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }

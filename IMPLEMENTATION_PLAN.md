@@ -17,7 +17,8 @@
 - **Foundation:** NestJS API + Expo RN app; Mongo↔in-memory persistence (11+ collections); Gemini behind an LLM abstraction with a **resilience layer** (error classifier, jittered backoff, model fallback, cross-process rate breaker); demo-mode fallbacks everywhere.
 - **Watch:** Document Vault (+ camera/OCR, vector search, category filter), Email Guardian (+ live triage, resurfacing), **Gmail + Google Calendar auto-fetch + monitors** (dormant until Google creds).
 - **Learn (the superpower):** grow-with-you **memory + background learning loop** (Hermes' don't-learn discipline), char-capped profile injected into agent + nudges + greeting.
-- **Connect:** Context Engine — cross-domain, explainable, dismissible nudges; **profile-aware** prep nudges.
+- **Connect:** Context Engine — cross-domain, explainable, dismissible nudges; **profile-aware** prep nudges; **relationship** nudges (birthdays/anniversaries + follow-ups).
+- **Remember people:** **Relationship Memory** (§3.10) — people, notes, important dates, follow-ups; drives proactive birthday/follow-up nudges.
 - **Track:** **Health Companion** (§3.6) — log vitals/medications/symptoms, latest readings + trends; feeds doctor briefings.
 - **Prepare:** **Offline Life Briefing** (event + docs + profile → prepared brief).
 - **Act:** **one-tap AI reply drafting** (personalised, never sends).

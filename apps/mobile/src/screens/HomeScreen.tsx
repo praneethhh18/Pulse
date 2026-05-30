@@ -23,6 +23,7 @@ import {
 } from '../components/ui';
 import { NudgeCard } from '../components/NudgeCard';
 import { BriefingSheet } from '../components/BriefingSheet';
+import { PeopleSheet } from '../components/PeopleSheet';
 import { useI18n } from '../i18n';
 import type { CalendarEvent, MatterEmail } from '../api/types';
 import { API_URL } from '../config';
@@ -39,6 +40,7 @@ const EVENT_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [briefEventId, setBriefEventId] = useState<string | null>(null);
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const { t } = useI18n();
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
 
@@ -77,6 +79,9 @@ export function HomeScreen() {
           </View>
           <Text style={styles.brandText}>PULSE</Text>
           <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setPeopleOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
+            <Ionicons name="people" size={20} color={colors.brandSoft} />
+          </Pressable>
           <ModeBadge
             storage={d.mode.storage}
             ai={d.mode.ai}
@@ -136,6 +141,7 @@ export function HomeScreen() {
       </View>
     </ScrollView>
     <BriefingSheet eventId={briefEventId} onClose={() => setBriefEventId(null)} />
+    <PeopleSheet visible={peopleOpen} onClose={() => setPeopleOpen(false)} />
     </>
   );
 }

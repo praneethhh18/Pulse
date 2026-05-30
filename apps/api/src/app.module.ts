@@ -19,6 +19,7 @@ import { PrivacyModule } from './privacy/privacy.module';
 import { MemoryModule } from './memory/memory.module';
 import { BriefingModule } from './briefing/briefing.module';
 import { HealthCompanionModule } from './health/health.module';
+import { RelationshipsModule } from './relationships/relationships.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { HealthCompanionModule } from './health/health.module';
     MemoryModule,
     BriefingModule,
     HealthCompanionModule,
+    RelationshipsModule,
   ],
   controllers: [AppController],
   providers: [

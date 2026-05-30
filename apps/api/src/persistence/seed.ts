@@ -5,6 +5,7 @@ import type {
   DocumentDoc,
   EmailDoc,
   HealthRecordDoc,
+  PersonDoc,
   UserDoc,
 } from '../domain/types';
 
@@ -50,6 +51,7 @@ export interface SeedData {
   email_intelligence: EmailDoc[];
   calendar_events: CalendarEventDoc[];
   health_records: HealthRecordDoc[];
+  relationship_memory: PersonDoc[];
 }
 
 function health(
@@ -223,11 +225,39 @@ export function buildSeed(userId: string): SeedData {
     health(userId, 'symptom', 'Mild headache', undefined, undefined, 4, 'Evening, after screen time'),
   ];
 
+  const relationship_memory: PersonDoc[] = [
+    {
+      ...base(userId),
+      name: 'Asha',
+      relation: 'wife',
+      notes: ['Loves mystery novels', 'Allergic to cashews'],
+      importantDates: [{ label: 'Birthday', date: iso(daysFromNow(5, 0, 0)) }],
+      followUps: [],
+    },
+    {
+      ...base(userId),
+      name: 'Haresh',
+      relation: 'friend',
+      notes: ['Mentioned he is thinking about switching jobs'],
+      importantDates: [],
+      followUps: [
+        {
+          id: randomUUID(),
+          text: 'Send him the project document',
+          dueAt: iso(daysFromNow(2, 18, 0)),
+          done: false,
+          createdAt: iso(new Date()),
+        },
+      ],
+    },
+  ];
+
   return {
     users: [user],
     documents,
     email_intelligence,
     calendar_events,
     health_records,
+    relationship_memory,
   };
 }

@@ -82,6 +82,15 @@ export interface AgentReply {
   mode: 'live' | 'demo';
 }
 
+export interface Person {
+  _id: string;
+  name: string;
+  relation?: string;
+  notes: string[];
+  importantDates: { label: string; date: string }[];
+  followUps: { id: string; text: string; dueAt?: string; done: boolean; createdAt: string }[];
+}
+
 export interface HealthSummary {
   counts: { total: number; vitals: number; medications: number };
   vitals: { name: string; latest?: string; unit?: string; notedAt: string; trend: string[] }[];

@@ -6,6 +6,7 @@ import type {
   HealthSummary,
   Nudge,
   Overview,
+  Person,
 } from './types';
 
 // Optional auth-token provider (set by the app when Firebase Auth is enabled).
@@ -110,6 +111,18 @@ export const api = {
       turnCount: number;
       lastReviewedAt?: string;
     }>('/me/profile'),
+  people: () => req<Person[]>('/people'),
+  addPerson: (body: { name: string; relation?: string }) =>
+    req<Person>('/people', { method: 'POST', body: JSON.stringify(body) }),
+  addPersonNote: (id: string, text: string) =>
+    req<Person>(`/people/${id}/notes`, { method: 'POST', body: JSON.stringify({ text }) }),
+  addPersonFollowUp: (id: string, text: string, dueAt?: string) =>
+    req<Person>(`/people/${id}/followups`, {
+      method: 'POST',
+      body: JSON.stringify({ text, dueAt }),
+    }),
+  completeFollowUp: (id: string, fid: string) =>
+    req<Person>(`/people/${id}/followups/${fid}/done`, { method: 'POST' }),
   healthSummary: () => req<HealthSummary>('/me/health/summary'),
   addHealthRecord: (body: {
     kind: 'vital' | 'medication' | 'symptom';
