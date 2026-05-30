@@ -22,6 +22,7 @@ import { HealthCompanionModule } from './health/health.module';
 import { RelationshipsModule } from './relationships/relationships.module';
 import { FinanceModule } from './finance/finance.module';
 import { LearningModule } from './learning/learning.module';
+import { TravelModule } from './travel/travel.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { LearningModule } from './learning/learning.module';
     RelationshipsModule,
     FinanceModule,
     LearningModule,
+    TravelModule,
   ],
   controllers: [AppController],
   providers: [

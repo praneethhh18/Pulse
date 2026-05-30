@@ -119,3 +119,12 @@ export interface LearningCard {
   back: string;
   dueAt: string;
 }
+
+export interface Trip {
+  _id: string;
+  destination: string;
+  startsAt: string;
+  endsAt?: string;
+  notes?: string;
+  packingList: { label: string; packed: boolean }[];
+}

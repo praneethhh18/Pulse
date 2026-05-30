@@ -21,7 +21,8 @@ export type CollectionName =
   | 'user_profile'
   | 'provider_state'
   | 'learning_goals'
-  | 'learning_cards';
+  | 'learning_cards'
+  | 'trips';
 
 export interface BaseDoc {
   _id: string;
@@ -110,6 +111,19 @@ export interface IntegrationDoc extends BaseDoc {
   email?: string;
   tokens: string; // encrypted (AES-256-GCM) OAuth token blob
   lastSyncAt?: string;
+}
+
+// Travel Companion (vision §3.8) — everything you'd otherwise forget for a trip.
+export interface PackItem {
+  label: string;
+  packed: boolean;
+}
+export interface TripDoc extends BaseDoc {
+  destination: string;
+  startsAt: string; // ISO
+  endsAt?: string;
+  notes?: string;
+  packingList: PackItem[];
 }
 
 // Learning Companion (vision §3.9) — spaced repetition resurfaces what you're

@@ -10,6 +10,7 @@ import type {
   Nudge,
   Overview,
   Person,
+  Trip,
 } from './types';
 
 // Optional auth-token provider (set by the app when Firebase Auth is enabled).
@@ -135,6 +136,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ grade }),
     }),
+  trips: () => req<Trip[]>('/me/trips'),
+  addTrip: (body: { destination: string; startsAt: string; endsAt?: string }) =>
+    req<Trip>('/me/trips', { method: 'POST', body: JSON.stringify(body) }),
+  togglePack: (tripId: string, index: number) =>
+    req<Trip>(`/me/trips/${tripId}/pack/${index}`, { method: 'POST' }),
   financeSummary: () => req<FinanceSummary>('/me/finance/summary'),
   addTransaction: (body: {
     amount: number;

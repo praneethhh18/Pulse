@@ -120,6 +120,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     );
     this.repos.set('learning_goals', new MemoryRepository(seed.learning_goals));
     this.repos.set('learning_cards', new MemoryRepository(seed.learning_cards));
+    this.repos.set('trips', new MemoryRepository(seed.trips));
     for (const name of ALL_COLLECTIONS) {
       if (!this.repos.has(name)) this.repos.set(name, new MemoryRepository([]));
     }
@@ -146,6 +147,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
       await this.getRepo('learning_goals').insert(g);
     for (const c of seed.learning_cards)
       await this.getRepo('learning_cards').insert(c);
+    for (const tr of seed.trips) await this.getRepo('trips').insert(tr);
     this.logger.log('Seeded demo data into MongoDB');
   }
 }

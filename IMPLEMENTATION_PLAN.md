@@ -22,6 +22,8 @@
 - **Track:** **Health Companion** (§3.6) — log vitals/medications/symptoms, latest readings + trends; feeds doctor briefings.
 - **Money:** **Financial Pulse** (§3.7, demo) — spend by category over rolling 30-day windows, subscriptions, and a proactive "spent N% more on X" nudge (real bank sync via Plaid/Account-Aggregator is the live-only add-on).
 - **Learn:** **Learning Companion** (§3.9) — goals + flashcards with **spaced repetition** (SM-2-lite), a quiz flow, and a "cards due for review" nudge; cards auto-generate with Gemini when live.
+- **Travel:** **Travel Companion** (§3.8, demo) — trips with **AI packing lists**, a packing checklist, and a trip-countdown nudge (live flight-status APIs are the live-only add-on).
+- **UX:** Home's secondary modules consolidated behind a single **"Spaces" launcher** (Money · People · Learn · Travel) — declutters the dashboard.
 - **Prepare:** **Offline Life Briefing** (event + docs + profile → prepared brief).
 - **Ask anything:** the agent answers across the user's *whole* life in one place — documents, mail, calendar, **health, money, people, learning** — grounded, personalised, in their language.
 - **Act:** **one-tap AI reply drafting** (personalised, never sends).

@@ -9,6 +9,7 @@ import type {
   LearningGoalDoc,
   PersonDoc,
   TransactionDoc,
+  TripDoc,
   UserDoc,
 } from '../domain/types';
 
@@ -58,6 +59,7 @@ export interface SeedData {
   financial_transactions: TransactionDoc[];
   learning_goals: LearningGoalDoc[];
   learning_cards: CardDoc[];
+  trips: TripDoc[];
 }
 
 function txn(
@@ -325,6 +327,26 @@ export function buildSeed(userId: string): SeedData {
     card('How are you?', '¿Cómo estás?'),
   ];
 
+  const trips: TripDoc[] = [
+    {
+      ...base(userId),
+      destination: 'Goa',
+      startsAt: iso(daysFromNow(6, 6, 0)),
+      endsAt: iso(daysFromNow(9, 20, 0)),
+      notes: 'Long weekend',
+      packingList: [
+        { label: 'ID / passport', packed: true },
+        { label: 'Phone + charger', packed: true },
+        { label: 'Sunscreen & sunglasses', packed: false },
+        { label: 'Swimwear', packed: false },
+        { label: 'Light cotton clothes (3 days)', packed: false },
+        { label: 'Flip-flops', packed: false },
+        { label: 'Medications', packed: false },
+        { label: 'Hotel & flight tickets', packed: true },
+      ],
+    },
+  ];
+
   return {
     users: [user],
     documents,
@@ -335,5 +357,6 @@ export function buildSeed(userId: string): SeedData {
     financial_transactions,
     learning_goals,
     learning_cards,
+    trips,
   };
 }

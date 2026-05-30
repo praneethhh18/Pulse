@@ -12,6 +12,7 @@ import type {
   NudgeDoc,
   PersonDoc,
   TransactionDoc,
+  TripDoc,
 } from '../domain/types';
 
 // ─── The Context Engine ──────────────────────────────────────────────────
@@ -30,7 +31,7 @@ export class ContextService {
   ) {}
 
   async nudges(userId: string, tz = 'Asia/Kolkata'): Promise<NudgeDoc[]> {
-    const [emails, documents, events, profile, people, transactions, cards] = await Promise.all([
+    const [emails, documents, events, profile, people, transactions, cards, trips] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence
@@ -42,6 +43,7 @@ export class ContextService {
         .getRepo<TransactionDoc>('financial_transactions')
         .findByUser(userId),
       this.persistence.getRepo<CardDoc>('learning_cards').findByUser(userId),
+      this.persistence.getRepo<TripDoc>('trips').findByUser(userId),
     ]);
 
     const nudges: NudgeDoc[] = [
@@ -54,6 +56,7 @@ export class ContextService {
       ...this.relationshipNudges(userId, people),
       ...this.spendingNudges(userId, transactions),
       ...this.learningNudges(userId, cards),
+      ...this.tripNudges(userId, trips, tz),
     ];
 
     // Hide anything the user has dismissed.
@@ -301,6 +304,32 @@ export class ContextService {
       );
     }
 
+    return out;
+  }
+
+  // Travel Companion (vision §3.8): trip countdown + packing readiness.
+  private tripNudges(userId: string, trips: TripDoc[], tz: string): NudgeDoc[] {
+    const now = Date.now();
+    const out: NudgeDoc[] = [];
+    for (const trip of trips) {
+      const start = new Date(trip.startsAt).getTime();
+      const days = Math.ceil((start - now) / DAY);
+      if (days < 0 || days > 14) continue;
+      const packed = trip.packingList.filter((p) => p.packed).length;
+      const total = trip.packingList.length;
+      const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
+      out.push(
+        this.make(userId, {
+          kind: 'trip',
+          severity: days <= 2 ? 'warning' : 'info',
+          title: `Trip to ${trip.destination} ${when}`,
+          message: `Your trip to ${trip.destination} (${fmtDate(trip.startsAt, tz)}) is ${when}. Packing: ${packed}/${total} done.${packed < total ? ' Want to finish your list?' : ''}`,
+          reason: `A saved trip departs within two weeks.`,
+          sources: [{ collection: 'trips', id: trip._id, label: trip.destination }],
+          suggestedAction: { label: 'Open packing list', type: 'packing' },
+        }),
+      );
+    }
     return out;
   }
 

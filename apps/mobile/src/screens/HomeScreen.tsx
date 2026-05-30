@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
-import { colors, font, gradients, radius, spacing } from '../theme';
+import { colors, font, gradients, radius, shadow, spacing } from '../theme';
 import {
   Card,
   EmptyState,
@@ -26,6 +26,7 @@ import { BriefingSheet } from '../components/BriefingSheet';
 import { PeopleSheet } from '../components/PeopleSheet';
 import { MoneySheet } from '../components/MoneySheet';
 import { LearnSheet } from '../components/LearnSheet';
+import { TravelSheet } from '../components/TravelSheet';
 import { useI18n } from '../i18n';
 import type { CalendarEvent, MatterEmail } from '../api/types';
 import { API_URL } from '../config';
@@ -45,6 +46,8 @@ export function HomeScreen() {
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [moneyOpen, setMoneyOpen] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [travelOpen, setTravelOpen] = useState(false);
+  const [spacesOpen, setSpacesOpen] = useState(false);
   const { t } = useI18n();
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
 
@@ -83,14 +86,8 @@ export function HomeScreen() {
           </View>
           <Text style={styles.brandText}>PULSE</Text>
           <View style={{ flex: 1 }} />
-          <Pressable onPress={() => setLearnOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
-            <Ionicons name="school" size={20} color={colors.brandSoft} />
-          </Pressable>
-          <Pressable onPress={() => setMoneyOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
-            <Ionicons name="wallet" size={20} color={colors.brandSoft} />
-          </Pressable>
-          <Pressable onPress={() => setPeopleOpen(true)} hitSlop={8} style={{ marginRight: spacing(3) }}>
-            <Ionicons name="people" size={20} color={colors.brandSoft} />
+          <Pressable onPress={() => setSpacesOpen((v) => !v)} hitSlop={8} style={{ marginRight: spacing(3) }}>
+            <Ionicons name="grid" size={20} color={colors.brandSoft} />
           </Pressable>
           <ModeBadge
             storage={d.mode.storage}
@@ -150,10 +147,37 @@ export function HomeScreen() {
         </Card>
       </View>
     </ScrollView>
+    {spacesOpen ? (
+      <>
+        <Pressable style={styles.spacesBackdrop} onPress={() => setSpacesOpen(false)} />
+        <View style={[styles.spacesMenu, { top: insets.top + spacing(13) }]}>
+          {([
+            { icon: 'wallet', label: t('home.money'), open: () => setMoneyOpen(true) },
+            { icon: 'people', label: t('home.people'), open: () => setPeopleOpen(true) },
+            { icon: 'school', label: t('home.learn'), open: () => setLearnOpen(true) },
+            { icon: 'airplane', label: t('home.travel'), open: () => setTravelOpen(true) },
+          ] as const).map((it) => (
+            <Pressable
+              key={it.label}
+              style={styles.spaceRow}
+              onPress={() => {
+                setSpacesOpen(false);
+                it.open();
+              }}
+            >
+              <Ionicons name={it.icon} size={18} color={colors.brandSoft} />
+              <Text style={styles.spaceText}>{it.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </>
+    ) : null}
+
     <BriefingSheet eventId={briefEventId} onClose={() => setBriefEventId(null)} />
     <PeopleSheet visible={peopleOpen} onClose={() => setPeopleOpen(false)} />
     <MoneySheet visible={moneyOpen} onClose={() => setMoneyOpen(false)} />
     <LearnSheet visible={learnOpen} onClose={() => setLearnOpen(false)} />
+    <TravelSheet visible={travelOpen} onClose={() => setTravelOpen(false)} />
     </>
   );
 }
@@ -315,6 +339,26 @@ const styles = StyleSheet.create({
   eventTitle: { ...font.body, color: colors.text, fontWeight: '600' },
   eventMeta: { ...font.small, color: colors.textFaint, marginTop: 2 },
   eventBrief: { ...font.tiny, color: colors.brandSoft, textTransform: 'none', marginTop: 2 },
+  spacesBackdrop: { ...StyleSheet.absoluteFillObject },
+  spacesMenu: {
+    position: 'absolute',
+    right: spacing(5),
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    paddingVertical: spacing(2),
+    minWidth: 180,
+    ...shadow.card,
+  },
+  spaceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(3),
+  },
+  spaceText: { ...font.body, color: colors.text },
   eventTime: { ...font.tiny, color: colors.textFaint, textAlign: 'right', textTransform: 'none' },
   eventTimeBold: { ...font.small, color: colors.textDim },
 });
