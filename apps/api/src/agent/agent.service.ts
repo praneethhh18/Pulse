@@ -5,13 +5,31 @@ import { DocumentsService } from '../documents/documents.service';
 import { EmailService } from '../email/email.service';
 import { ContextService } from '../context/context.service';
 import { MemoryService } from '../memory/memory.service';
+import { HealthCompanionService } from '../health/health.service';
+import { FinanceService } from '../finance/finance.service';
+import { RelationshipsService } from '../relationships/relationships.service';
+import { LearningService } from '../learning/learning.service';
 import { languageDirective } from '../common/lang.util';
-import type { CalendarEventDoc } from '../domain/types';
+import { formatInr } from '../common/finance.util';
+import type { CalendarEventDoc, PersonDoc } from '../domain/types';
 
 export interface AgentReply {
   answer: string;
   sources: { type: string; label: string }[];
   mode: 'live' | 'demo';
+}
+
+interface LifeContext {
+  healthSummary: {
+    vitals: { name: string; latest?: string; unit?: string }[];
+    medications: { name: string; value?: string }[];
+  };
+  financeSummary: {
+    total: number;
+    categories: { name: string; amount: number; deltaPct: number | null }[];
+  };
+  people: PersonDoc[];
+  dueCards: number;
 }
 
 @Injectable()
@@ -23,19 +41,30 @@ export class AgentService {
     private readonly email: EmailService,
     private readonly context: ContextService,
     private readonly memory: MemoryService,
+    private readonly health: HealthCompanionService,
+    private readonly finance: FinanceService,
+    private readonly relationships: RelationshipsService,
+    private readonly learning: LearningService,
   ) {}
 
-  // Answers grounded in the user's own life — documents, mail, calendar, nudges.
+  // Answers grounded in the user's WHOLE life — documents, mail, calendar,
+  // nudges, health, money, people and learning.
   async chat(userId: string, message: string, lang = 'en'): Promise<AgentReply> {
-    const [docs, matters, nudges, events, profile] = await Promise.all([
-      this.documents.search(userId, message, 3),
-      this.email.whatMatters(userId),
-      this.context.nudges(userId),
-      this.persistence
-        .getRepo<CalendarEventDoc>('calendar_events')
-        .findByUser(userId),
-      this.memory.getProfileText(userId),
-    ]);
+    const [docs, matters, nudges, events, profile, healthSummary, financeSummary, people, dueCards] =
+      await Promise.all([
+        this.documents.search(userId, message, 3),
+        this.email.whatMatters(userId),
+        this.context.nudges(userId),
+        this.persistence
+          .getRepo<CalendarEventDoc>('calendar_events')
+          .findByUser(userId),
+        this.memory.getProfileText(userId),
+        this.health.summary(userId),
+        this.finance.summary(userId),
+        this.relationships.list(userId),
+        this.learning.countDue(userId),
+      ]);
+    const life = { healthSummary, financeSummary, people, dueCards };
 
     const upcoming = events
       .filter((e) => new Date(e.startsAt).getTime() > Date.now())
@@ -50,7 +79,7 @@ export class AgentService {
     const transcript = [{ role: 'user' as const, text: message }];
 
     if (this.llm.live) {
-      const ctx = this.buildContext(docs, matters, nudges, upcoming);
+      const ctx = this.buildContext(docs, matters, nudges, upcoming, life);
       const profileBlock = profile
         ? `\n\nWhat you know about this user (their profile):\n${profile}`
         : '';
@@ -64,7 +93,7 @@ export class AgentService {
       return { answer, sources, mode: 'live' };
     }
 
-    const answer = this.demoAnswer(message, docs, matters, nudges, upcoming, profile);
+    const answer = this.demoAnswer(message, docs, matters, nudges, upcoming, profile, life);
     this.memory.reviewAsync(userId, [...transcript, { role: 'pulse', text: answer }]);
     return { answer, sources, mode: 'demo' };
   }
@@ -74,6 +103,7 @@ export class AgentService {
     matters: { subject: string; summary: string }[],
     nudges: { title: string; message: string }[],
     upcoming: CalendarEventDoc[],
+    life: LifeContext,
   ): string {
     const parts: string[] = [];
     if (docs.length)
@@ -98,6 +128,45 @@ export class AgentService {
             .map((e) => `- ${e.title} at ${new Date(e.startsAt).toLocaleString()}`)
             .join('\n'),
       );
+
+    const f = life.financeSummary;
+    if (f?.categories?.length)
+      parts.push(
+        `SPENDING (last 30 days, total ${formatInr(f.total)}):\n` +
+          f.categories
+            .slice(0, 5)
+            .map(
+              (c) =>
+                `- ${c.name}: ${formatInr(c.amount)}${c.deltaPct != null ? ` (${c.deltaPct >= 0 ? '+' : ''}${c.deltaPct}% vs prev)` : ''}`,
+            )
+            .join('\n'),
+      );
+
+    const h = life.healthSummary;
+    if (h?.vitals?.length)
+      parts.push(
+        'HEALTH (latest):\n' +
+          h.vitals.map((v) => `- ${v.name}: ${v.latest}${v.unit ? ' ' + v.unit : ''}`).join('\n') +
+          (h.medications.length ? `\nMedications: ${h.medications.map((m) => m.name).join(', ')}` : ''),
+      );
+
+    if (life.people?.length)
+      parts.push(
+        'PEOPLE:\n' +
+          life.people
+            .map(
+              (p) =>
+                `- ${p.name}${p.relation ? ` (${p.relation})` : ''}${p.notes.length ? ': ' + p.notes.join('; ') : ''}` +
+                (p.importantDates.length
+                  ? `; ${p.importantDates.map((d) => `${d.label} ${new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`).join(', ')}`
+                  : ''),
+            )
+            .join('\n'),
+      );
+
+    if (life.dueCards > 0)
+      parts.push(`LEARNING: ${life.dueCards} flashcard(s) due for review.`);
+
     return parts.join('\n\n') || 'No relevant context found.';
   }
 
@@ -108,10 +177,45 @@ export class AgentService {
     matters: { subject: string; summary: string }[],
     nudges: { title: string; message: string }[],
     upcoming: CalendarEventDoc[],
-    profile?: string,
+    profile: string | undefined,
+    life: LifeContext,
   ): string {
     const q = message.toLowerCase();
     const lines: string[] = [];
+
+    // Money
+    if (/spen[dt]|money|budget|expense|cost|finance|saving/.test(q) && life.financeSummary.categories.length) {
+      const f = life.financeSummary;
+      const top = f.categories[0];
+      return `💰 In the last 30 days you've spent ${formatInr(f.total)}. Top category: ${top.name} (${formatInr(top.amount)})${top.deltaPct != null && top.deltaPct >= 25 ? ` — up ${top.deltaPct}% vs the prior 30 days` : ''}.`;
+    }
+    // Health
+    if (/health|\bbp\b|blood pressure|weight|sugar|vital|medication|medicine|doctor/.test(q) && life.healthSummary.vitals.length) {
+      const h = life.healthSummary;
+      const vitals = h.vitals.map((v) => `${v.name}: ${v.latest}${v.unit ? ' ' + v.unit : ''}`).join(', ');
+      const meds = h.medications.length ? ` Medications: ${h.medications.map((m) => m.name).join(', ')}.` : '';
+      return `❤️ Your latest readings — ${vitals}.${meds}`;
+    }
+    // People (by name, or birthdays/follow-ups)
+    const named = life.people.find((p) => q.includes(p.name.toLowerCase()));
+    if (named) {
+      const bits = [
+        named.relation ? `your ${named.relation}` : null,
+        named.notes.length ? `you noted: ${named.notes.join('; ')}` : null,
+        named.importantDates.length
+          ? named.importantDates.map((d) => `${d.label} on ${new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}`).join(', ')
+          : null,
+        named.followUps.filter((f) => !f.done).length
+          ? `open follow-up: ${named.followUps.filter((f) => !f.done).map((f) => f.text).join('; ')}`
+          : null,
+      ].filter(Boolean);
+      return `👥 ${named.name} — ${bits.join('. ')}.`;
+    }
+    if (/learn|review|study|flashcard|practice|revise/.test(q)) {
+      return life.dueCards > 0
+        ? `🎓 You have ${life.dueCards} flashcard(s) due for review. Open Learn for a quick session.`
+        : `🎓 Nothing due to review right now — you're all caught up.`;
+    }
 
     // "What do you know about me?" → reflect the learned profile.
     if (/about me|know about me|who am i|my profile|remember about me/.test(q)) {
