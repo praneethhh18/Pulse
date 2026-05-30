@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { PersistenceService } from '../persistence/persistence.service';
 import { MemoryService } from '../memory/memory.service';
 import { fmtDate, fmtTime } from '../common/time.util';
-import { formatInr, spendByCategory } from '../common/finance.util';
+import { formatInr, inWindow, spendByCategory } from '../common/finance.util';
 import type {
   CalendarEventDoc,
   CardDoc,
@@ -55,6 +55,7 @@ export class ContextService {
       ...this.profilePrep(userId, profile, events, tz),
       ...this.relationshipNudges(userId, people),
       ...this.spendingNudges(userId, transactions),
+      ...this.cashFlowNudges(userId, transactions),
       ...this.learningNudges(userId, cards),
       ...this.tripNudges(userId, trips, tz),
     ];
@@ -331,6 +332,37 @@ export class ContextService {
       );
     }
     return out;
+  }
+
+  // Financial Pulse (vision §3.13 flagship): after salary lands, show the real
+  // money left once committed/recurring expenses are accounted for.
+  private cashFlowNudges(userId: string, txns: TransactionDoc[]): NudgeDoc[] {
+    const income = txns
+      .filter((t) => t.direction === 'credit' && inWindow(t.occurredAt, 30, 0))
+      .reduce((s, t) => s + t.amount, 0);
+    // De-dupe recurring commitments by merchant (monthly bills/subscriptions).
+    const committedMap = new Map<string, number>();
+    for (const t of txns) {
+      if (t.recurring && t.direction === 'debit' && !committedMap.has(t.merchant)) {
+        committedMap.set(t.merchant, t.amount);
+      }
+    }
+    const committed = [...committedMap.values()].reduce((s, a) => s + a, 0);
+    if (income <= 0 || committed <= 0) return [];
+
+    const available = income - committed;
+    const names = [...committedMap.keys()].slice(0, 3).join(', ');
+    return [
+      this.make(userId, {
+        kind: 'cash-flow',
+        severity: 'info',
+        title: 'Your real available money',
+        message: `Income of ${formatInr(income)} is in. After committed expenses (${formatInr(committed)} — ${names}) you have about ${formatInr(available)} to work with before discretionary spending.`,
+        reason: 'Recent income minus your recurring committed expenses.',
+        sources: [{ collection: 'financial_transactions', id: 'cash-flow', label: 'Cash flow' }],
+        suggestedAction: { label: 'See spending', type: 'finance' },
+      }),
+    ];
   }
 
   // Learning Companion (vision §3.9): nudge when spaced-repetition cards are due.

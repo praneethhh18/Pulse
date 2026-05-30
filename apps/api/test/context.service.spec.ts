@@ -29,6 +29,14 @@ describe('ContextService — cross-domain nudges', () => {
     }
   });
 
+  it('produces the cash-flow nudge from income minus committed expenses', async () => {
+    const { context } = await setup();
+    const nudges = await context.nudges('demo-user', 'Asia/Kolkata');
+    const cash = nudges.find((n) => n.kind === 'cash-flow');
+    expect(cash).toBeDefined();
+    expect(cash!.message).toMatch(/available|work with/i);
+  });
+
   it('hides a nudge after it is dismissed (ack)', async () => {
     const { context } = await setup();
     const before = await context.nudges('demo-user', 'Asia/Kolkata');
