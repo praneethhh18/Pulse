@@ -5,6 +5,8 @@ import type {
   EmailItem,
   FinanceSummary,
   HealthSummary,
+  LearningCard,
+  LearningGoal,
   Nudge,
   Overview,
   Person,
@@ -124,6 +126,15 @@ export const api = {
     }),
   completeFollowUp: (id: string, fid: string) =>
     req<Person>(`/people/${id}/followups/${fid}/done`, { method: 'POST' }),
+  learningGoals: () => req<LearningGoal[]>('/me/learning/goals'),
+  dueCards: () => req<LearningCard[]>('/me/learning/due'),
+  createGoal: (topic: string) =>
+    req<unknown>('/me/learning/goals', { method: 'POST', body: JSON.stringify({ topic }) }),
+  reviewCard: (id: string, grade: 'again' | 'good') =>
+    req<unknown>(`/me/learning/cards/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ grade }),
+    }),
   financeSummary: () => req<FinanceSummary>('/me/finance/summary'),
   addTransaction: (body: {
     amount: number;

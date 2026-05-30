@@ -6,6 +6,7 @@ import { fmtDate, fmtTime } from '../common/time.util';
 import { formatInr, spendByCategory } from '../common/finance.util';
 import type {
   CalendarEventDoc,
+  CardDoc,
   DocumentDoc,
   EmailDoc,
   NudgeDoc,
@@ -29,7 +30,7 @@ export class ContextService {
   ) {}
 
   async nudges(userId: string, tz = 'Asia/Kolkata'): Promise<NudgeDoc[]> {
-    const [emails, documents, events, profile, people, transactions] = await Promise.all([
+    const [emails, documents, events, profile, people, transactions, cards] = await Promise.all([
       this.persistence.getRepo<EmailDoc>('email_intelligence').findByUser(userId),
       this.persistence.getRepo<DocumentDoc>('documents').findByUser(userId),
       this.persistence
@@ -40,6 +41,7 @@ export class ContextService {
       this.persistence
         .getRepo<TransactionDoc>('financial_transactions')
         .findByUser(userId),
+      this.persistence.getRepo<CardDoc>('learning_cards').findByUser(userId),
     ]);
 
     const nudges: NudgeDoc[] = [
@@ -51,6 +53,7 @@ export class ContextService {
       ...this.profilePrep(userId, profile, events, tz),
       ...this.relationshipNudges(userId, people),
       ...this.spendingNudges(userId, transactions),
+      ...this.learningNudges(userId, cards),
     ];
 
     // Hide anything the user has dismissed.
@@ -299,6 +302,24 @@ export class ContextService {
     }
 
     return out;
+  }
+
+  // Learning Companion (vision §3.9): nudge when spaced-repetition cards are due.
+  private learningNudges(userId: string, cards: CardDoc[]): NudgeDoc[] {
+    const now = Date.now();
+    const due = cards.filter((c) => new Date(c.dueAt).getTime() <= now).length;
+    if (!due) return [];
+    return [
+      this.make(userId, {
+        kind: 'learning',
+        severity: 'info',
+        title: `${due} card${due > 1 ? 's' : ''} due for review`,
+        message: `You have ${due} flashcard${due > 1 ? 's' : ''} ready — a quick session now locks them into memory.`,
+        reason: 'Spaced-repetition cards have reached their optimal review time.',
+        sources: [{ collection: 'learning_cards', id: 'learning-due', label: 'Spaced repetition' }],
+        suggestedAction: { label: 'Review now', type: 'review' },
+      }),
+    ];
   }
 
   // Financial Pulse (vision §3.7): spot a category where spend jumped vs the

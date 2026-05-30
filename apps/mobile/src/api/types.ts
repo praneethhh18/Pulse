@@ -105,3 +105,17 @@ export interface FinanceSummary {
   subscriptions: { merchant: string; amount: number; category: string }[];
   topCategory?: string;
 }
+
+export interface LearningGoal {
+  _id: string;
+  topic: string;
+  total: number;
+  due: number;
+}
+export interface LearningCard {
+  _id: string;
+  goalId: string;
+  front: string;
+  back: string;
+  dueAt: string;
+}

@@ -2,9 +2,11 @@ import { randomUUID } from 'crypto';
 import { hashEmbed } from '../llm/embeddings';
 import type {
   CalendarEventDoc,
+  CardDoc,
   DocumentDoc,
   EmailDoc,
   HealthRecordDoc,
+  LearningGoalDoc,
   PersonDoc,
   TransactionDoc,
   UserDoc,
@@ -54,6 +56,8 @@ export interface SeedData {
   health_records: HealthRecordDoc[];
   relationship_memory: PersonDoc[];
   financial_transactions: TransactionDoc[];
+  learning_goals: LearningGoalDoc[];
+  learning_cards: CardDoc[];
 }
 
 function txn(
@@ -300,6 +304,27 @@ export function buildSeed(userId: string): SeedData {
     txn(userId, 600, 'debit', 'Health', 'Apollo Pharmacy', 4),
   ];
 
+  const spanishGoalId = randomUUID();
+  const learning_goals: LearningGoalDoc[] = [
+    { ...base(userId), _id: spanishGoalId, topic: 'Conversational Spanish' },
+  ];
+  const card = (front: string, back: string): CardDoc => ({
+    ...base(userId),
+    goalId: spanishGoalId,
+    front,
+    back,
+    dueAt: iso(daysFromNow(-1, 9, 0)), // due (yesterday) → ready to review
+    intervalDays: 0,
+    reps: 0,
+    lapses: 0,
+  });
+  const learning_cards: CardDoc[] = [
+    card('Hello', 'Hola'),
+    card('Thank you', 'Gracias'),
+    card('Good morning', 'Buenos días'),
+    card('How are you?', '¿Cómo estás?'),
+  ];
+
   return {
     users: [user],
     documents,
@@ -308,5 +333,7 @@ export function buildSeed(userId: string): SeedData {
     health_records,
     relationship_memory,
     financial_transactions,
+    learning_goals,
+    learning_cards,
   };
 }

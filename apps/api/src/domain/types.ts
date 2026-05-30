@@ -19,7 +19,9 @@ export type CollectionName =
   | 'relationship_memory'
   | 'integrations'
   | 'user_profile'
-  | 'provider_state';
+  | 'provider_state'
+  | 'learning_goals'
+  | 'learning_cards';
 
 export interface BaseDoc {
   _id: string;
@@ -108,6 +110,21 @@ export interface IntegrationDoc extends BaseDoc {
   email?: string;
   tokens: string; // encrypted (AES-256-GCM) OAuth token blob
   lastSyncAt?: string;
+}
+
+// Learning Companion (vision §3.9) — spaced repetition resurfaces what you're
+// about to forget at the optimal moment.
+export interface LearningGoalDoc extends BaseDoc {
+  topic: string;
+}
+export interface CardDoc extends BaseDoc {
+  goalId: string;
+  front: string;
+  back: string;
+  dueAt: string; // ISO — when to review next
+  intervalDays: number;
+  reps: number;
+  lapses: number;
 }
 
 // Financial Pulse (vision §3.7) — spend awareness without spreadsheets.
