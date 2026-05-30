@@ -110,6 +110,17 @@ export interface IntegrationDoc extends BaseDoc {
   lastSyncAt?: string;
 }
 
+// Health Companion (vision §3.6) — vitals, medications, symptoms over time.
+export type HealthKind = 'vital' | 'medication' | 'symptom';
+export interface HealthRecordDoc extends BaseDoc {
+  kind: HealthKind;
+  name: string; // "Blood Pressure", "Weight", "Metformin", "Headache"
+  value?: string; // "120/80", "72"
+  unit?: string; // "kg", "mg/dL", "bpm"
+  notedAt: string; // ISO
+  notes?: string;
+}
+
 export interface CalendarEventDoc extends BaseDoc {
   title: string;
   startsAt: string; // ISO

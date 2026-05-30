@@ -81,3 +81,10 @@ export interface AgentReply {
   sources: { type: string; label: string }[];
   mode: 'live' | 'demo';
 }
+
+export interface HealthSummary {
+  counts: { total: number; vitals: number; medications: number };
+  vitals: { name: string; latest?: string; unit?: string; notedAt: string; trend: string[] }[];
+  medications: { name: string; value?: string; notes?: string; notedAt: string }[];
+  symptoms: { name: string; notes?: string; notedAt: string }[];
+}

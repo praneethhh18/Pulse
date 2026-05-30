@@ -18,6 +18,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { MemoryModule } from './memory/memory.module';
 import { BriefingModule } from './briefing/briefing.module';
+import { HealthCompanionModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { BriefingModule } from './briefing/briefing.module';
     PrivacyModule,
     MemoryModule,
     BriefingModule,
+    HealthCompanionModule,
   ],
   controllers: [AppController],
   providers: [

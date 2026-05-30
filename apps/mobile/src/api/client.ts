@@ -3,6 +3,7 @@ import type {
   AgentReply,
   DocumentItem,
   EmailItem,
+  HealthSummary,
   Nudge,
   Overview,
 } from './types';
@@ -109,6 +110,14 @@ export const api = {
       turnCount: number;
       lastReviewedAt?: string;
     }>('/me/profile'),
+  healthSummary: () => req<HealthSummary>('/me/health/summary'),
+  addHealthRecord: (body: {
+    kind: 'vital' | 'medication' | 'symptom';
+    name: string;
+    value?: string;
+    unit?: string;
+    notes?: string;
+  }) => req('/me/health/records', { method: 'POST', body: JSON.stringify(body) }),
   briefing: (eventId: string) =>
     req<{
       event: { title: string; startsAt: string; location?: string; type: string };

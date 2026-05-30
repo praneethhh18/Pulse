@@ -11,6 +11,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { VaultScreen } from './src/screens/VaultScreen';
 import { GuardianScreen } from './src/screens/GuardianScreen';
 import { AskScreen } from './src/screens/AskScreen';
+import { HealthScreen } from './src/screens/HealthScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SignInScreen } from './src/screens/SignInScreen';
 import { authEnabled, watchAuth, getIdToken } from './src/lib/firebase';
@@ -38,6 +39,7 @@ const navTheme = {
 
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Home: 'home',
+  Health: 'heart',
   Vault: 'folder-open',
   Guardian: 'shield-checkmark',
   Ask: 'sparkles',
@@ -69,6 +71,7 @@ function MainTabs() {
         })}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Health" component={HealthScreen} />
         <Tab.Screen name="Vault" component={VaultScreen} />
         <Tab.Screen name="Guardian" component={GuardianScreen} />
         <Tab.Screen name="Ask" component={AskScreen} />

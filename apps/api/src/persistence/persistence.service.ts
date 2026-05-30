@@ -109,6 +109,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
       'calendar_events',
       new MemoryRepository(seed.calendar_events),
     );
+    this.repos.set('health_records', new MemoryRepository(seed.health_records));
     for (const name of ALL_COLLECTIONS) {
       if (!this.repos.has(name)) this.repos.set(name, new MemoryRepository([]));
     }
@@ -125,6 +126,8 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
       await this.getRepo('email_intelligence').insert(e);
     for (const c of seed.calendar_events)
       await this.getRepo('calendar_events').insert(c);
+    for (const h of seed.health_records)
+      await this.getRepo('health_records').insert(h);
     this.logger.log('Seeded demo data into MongoDB');
   }
 }

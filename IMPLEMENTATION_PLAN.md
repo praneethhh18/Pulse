@@ -18,6 +18,7 @@
 - **Watch:** Document Vault (+ camera/OCR, vector search, category filter), Email Guardian (+ live triage, resurfacing), **Gmail + Google Calendar auto-fetch + monitors** (dormant until Google creds).
 - **Learn (the superpower):** grow-with-you **memory + background learning loop** (Hermes' don't-learn discipline), char-capped profile injected into agent + nudges + greeting.
 - **Connect:** Context Engine — cross-domain, explainable, dismissible nudges; **profile-aware** prep nudges.
+- **Track:** **Health Companion** (§3.6) — log vitals/medications/symptoms, latest readings + trends; feeds doctor briefings.
 - **Prepare:** **Offline Life Briefing** (event + docs + profile → prepared brief).
 - **Act:** **one-tap AI reply drafting** (personalised, never sends).
 - **Trust/ops:** Firebase Auth (multi-user, dormant), encrypted OAuth tokens, **export/delete-everything** privacy controls, GCS file storage (inline fallback), helmet/CORS/rate-limit/global-error-filter, **user-timezone-aware time** everywhere, Dockerfile + Cloud Run deploy guide.

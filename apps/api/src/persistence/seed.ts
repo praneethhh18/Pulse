@@ -4,6 +4,7 @@ import type {
   CalendarEventDoc,
   DocumentDoc,
   EmailDoc,
+  HealthRecordDoc,
   UserDoc,
 } from '../domain/types';
 
@@ -48,6 +49,27 @@ export interface SeedData {
   documents: DocumentDoc[];
   email_intelligence: EmailDoc[];
   calendar_events: CalendarEventDoc[];
+  health_records: HealthRecordDoc[];
+}
+
+function health(
+  userId: string,
+  kind: HealthRecordDoc['kind'],
+  name: string,
+  value: string | undefined,
+  unit: string | undefined,
+  daysAgo: number,
+  notes?: string,
+): HealthRecordDoc {
+  return {
+    ...base(userId),
+    kind,
+    name,
+    value,
+    unit,
+    notedAt: iso(daysFromNow(-daysAgo, 9, 0)),
+    notes,
+  };
 }
 
 export function buildSeed(userId: string): SeedData {
@@ -192,5 +214,20 @@ export function buildSeed(userId: string): SeedData {
     },
   ];
 
-  return { users: [user], documents, email_intelligence, calendar_events };
+  const health_records: HealthRecordDoc[] = [
+    health(userId, 'vital', 'Weight', '72', 'kg', 1),
+    health(userId, 'vital', 'Weight', '72.6', 'kg', 14),
+    health(userId, 'vital', 'Blood Pressure', '120/80', 'mmHg', 1),
+    health(userId, 'vital', 'Blood Sugar (fasting)', '95', 'mg/dL', 2),
+    health(userId, 'medication', 'Vitamin D', '60,000 IU weekly', undefined, 3, 'Advised after low Vitamin D (18) on last blood report'),
+    health(userId, 'symptom', 'Mild headache', undefined, undefined, 4, 'Evening, after screen time'),
+  ];
+
+  return {
+    users: [user],
+    documents,
+    email_intelligence,
+    calendar_events,
+    health_records,
+  };
 }
