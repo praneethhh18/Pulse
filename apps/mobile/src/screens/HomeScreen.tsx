@@ -61,6 +61,12 @@ export function HomeScreen() {
     );
 
   const d = q.data;
+  // Defensive defaults: tolerate a stale/partial API response without crashing.
+  const nudges = d.nudges ?? [];
+  const matters = d.matters ?? [];
+  const upcoming = d.upcoming ?? [];
+  const stats = d.stats ?? { documents: 0, watching: 0, nudges: 0 };
+  const mode = d.mode ?? { storage: 'memory', ai: 'mock' };
   const hour = new Date().getHours();
   const greetingKey =
     hour < 12 ? 'home.morning' : hour < 17 ? 'home.afternoon' : 'home.evening';
@@ -90,21 +96,21 @@ export function HomeScreen() {
             <Ionicons name="grid" size={20} color={colors.brandSoft} />
           </Pressable>
           <ModeBadge
-            storage={d.mode.storage}
-            ai={d.mode.ai}
+            storage={mode.storage}
+            ai={mode.ai}
           />
         </View>
         <Text style={styles.greeting}>{t(greetingKey, { name: d.greetingName })}</Text>
         <Text style={styles.subGreeting}>
-          {d.stats.nudges > 0
-            ? t('home.caught', { n: d.stats.nudges })
+          {stats.nudges > 0
+            ? t('home.caught', { n: stats.nudges })
             : t('home.allHandled')}
         </Text>
 
         <View style={styles.statsRow}>
-          <StatTile value={d.stats.documents} label={t('home.documents')} icon="folder-open" />
-          <StatTile value={d.stats.watching} label={t('home.watching')} icon="eye" />
-          <StatTile value={d.stats.nudges} label={t('home.nudges')} icon="notifications" />
+          <StatTile value={stats.documents} label={t('home.documents')} icon="folder-open" />
+          <StatTile value={stats.watching} label={t('home.watching')} icon="eye" />
+          <StatTile value={stats.nudges} label={t('home.nudges')} icon="notifications" />
         </View>
       </LinearGradient>
 
@@ -113,18 +119,18 @@ export function HomeScreen() {
         <SectionHeader
           title={t('home.noticed')}
           icon="sparkles"
-          caption={d.nudges.length ? `${d.nudges.length} active` : undefined}
+          caption={nudges.length ? `${nudges.length} active` : undefined}
         />
-        {d.nudges.length ? (
-          d.nudges.map((n) => <NudgeCard key={n._id} nudge={n} />)
+        {nudges.length ? (
+          nudges.map((n) => <NudgeCard key={n._id} nudge={n} />)
         ) : (
           <EmptyState icon="checkmark-done-circle" text="Nothing needs you right now." />
         )}
 
         {/* Needs you */}
         <SectionHeader title={t('home.needsYou')} icon="mail-unread" />
-        {d.matters.length ? (
-          d.matters.map((m) => <MatterRow key={m._id} email={m} />)
+        {matters.length ? (
+          matters.map((m) => <MatterRow key={m._id} email={m} />)
         ) : (
           <EmptyState icon="mail-open" text="Inbox under control." />
         )}
@@ -132,12 +138,12 @@ export function HomeScreen() {
         {/* Coming up */}
         <SectionHeader title={t('home.comingUp')} icon="calendar" />
         <Card>
-          {d.upcoming.length ? (
-            d.upcoming.map((e, i) => (
+          {upcoming.length ? (
+            upcoming.map((e, i) => (
               <EventRow
                 key={e._id}
                 event={e}
-                last={i === d.upcoming.length - 1}
+                last={i === upcoming.length - 1}
                 onPress={() => setBriefEventId(e._id)}
               />
             ))

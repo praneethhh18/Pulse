@@ -18,6 +18,7 @@ import { authEnabled, watchAuth, getIdToken } from './src/lib/firebase';
 import { setAuthTokenGetter } from './src/api/client';
 import { I18nProvider, useI18n } from './src/i18n';
 import type { TranslationKey } from './src/i18n/translations';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -114,12 +115,14 @@ function Root() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <I18nProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" />
-          <Root />
-        </QueryClientProvider>
-      </I18nProvider>
+      <ErrorBoundary>
+        <I18nProvider>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="light" />
+            <Root />
+          </QueryClientProvider>
+        </I18nProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
