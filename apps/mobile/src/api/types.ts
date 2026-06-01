@@ -91,6 +91,17 @@ export interface Person {
   followUps: { id: string; text: string; dueAt?: string; done: boolean; createdAt: string }[];
 }
 
+export type PhoneSignalKind = 'notification' | 'sms' | 'call' | 'app_usage' | 'location' | 'other';
+
+export interface PhoneSignal {
+  kind: PhoneSignalKind;
+  app?: string;
+  title?: string;
+  body?: string;
+  meta?: Record<string, unknown>;
+  occurredAt?: string;
+}
+
 export interface HealthSummary {
   counts: { total: number; vitals: number; medications: number };
   vitals: { name: string; latest?: string; unit?: string; notedAt: string; trend: string[] }[];

@@ -10,6 +10,7 @@ import type {
   Nudge,
   Overview,
   Person,
+  PhoneSignal,
   Trip,
 } from './types';
 
@@ -56,6 +57,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   overview: () => req<Overview>('/overview'),
   nudges: () => req<Nudge[]>('/context/nudges'),
+  // Phone awareness: the device batches raw signals (notifications, SMS, calls)
+  // and posts them; Pulse perceives them — learning + proactive reminders.
+  ingestSignals: (signals: PhoneSignal[]) =>
+    req<{ ingested: number; processed: number; learned: number; reminders: Nudge[] }>(
+      '/me/signals',
+      { method: 'POST', body: JSON.stringify({ signals }) },
+    ),
+  recentSignals: () => req<PhoneSignal[]>('/me/signals'),
   ackNudge: (key: string) =>
     req<{ ok: boolean }>('/context/nudges/ack', {
       method: 'POST',

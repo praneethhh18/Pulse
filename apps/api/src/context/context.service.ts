@@ -60,9 +60,15 @@ export class ContextService {
       ...this.tripNudges(userId, trips, tz),
     ];
 
+    // Merge in proactive reminders the perception loop derived from phone
+    // signals (stored as generated nudges), de-duped by stable key.
+    const generated = await this.generatedNudges(userId);
+    const byKey = new Map<string, NudgeDoc>();
+    for (const n of [...nudges, ...generated]) byKey.set(n.key, n);
+
     // Hide anything the user has dismissed.
     const acked = await this.ackedKeys(userId);
-    const visible = nudges.filter((n) => !acked.has(n.key));
+    const visible = [...byKey.values()].filter((n) => !acked.has(n.key));
 
     const sev = { critical: 0, warning: 1, info: 2 } as const;
     return visible.sort((a, b) => sev[a.severity] - sev[b.severity]);
@@ -74,6 +80,13 @@ export class ContextService {
     const existing = await repo.findOne({ userId, kind: '_ack', key });
     if (!existing) await repo.insert({ userId, kind: '_ack', key });
     return { ok: true };
+  }
+
+  // Perception-derived reminders, persisted in context_engine with generated:true.
+  private async generatedNudges(userId: string): Promise<NudgeDoc[]> {
+    const repo = this.persistence.getRepo<any>('context_engine');
+    const docs = await repo.findByUser(userId, { generated: true });
+    return docs as NudgeDoc[];
   }
 
   private async ackedKeys(userId: string): Promise<Set<string>> {

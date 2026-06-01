@@ -79,6 +79,25 @@ export class MemoryService {
     return result.slice(0, PROFILE_MAX_CHARS);
   }
 
+  /**
+   * Apply externally-extracted durable facts (e.g. from the perception loop
+   * reasoning over phone signals) into the same char-capped profile.
+   */
+  async learnFacts(userId: string, ops: MemoryOp[]): Promise<number> {
+    const clean = (ops ?? []).filter((o) => o && o.op);
+    if (!clean.length) return 0;
+    const profile = await this.getProfile(userId);
+    const content = this.applyOps(profile.content, clean);
+    if (content !== profile.content) {
+      await this.repo().update(profile._id, {
+        content,
+        lastReviewedAt: new Date().toISOString(),
+      });
+      this.logger.log(`learned ${clean.length} fact(s) from signals for ${userId}`);
+    }
+    return clean.length;
+  }
+
   /** Fire-and-forget: never blocks the user's reply. */
   reviewAsync(userId: string, transcript: TurnMessage[]): void {
     setImmediate(() => {

@@ -23,6 +23,7 @@ import { RelationshipsModule } from './relationships/relationships.module';
 import { FinanceModule } from './finance/finance.module';
 import { LearningModule } from './learning/learning.module';
 import { TravelModule } from './travel/travel.module';
+import { PerceptionModule } from './perception/perception.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TravelModule } from './travel/travel.module';
     FinanceModule,
     LearningModule,
     TravelModule,
+    PerceptionModule,
   ],
   controllers: [AppController],
   providers: [

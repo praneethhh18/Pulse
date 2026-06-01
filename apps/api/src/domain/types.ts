@@ -22,7 +22,8 @@ export type CollectionName =
   | 'provider_state'
   | 'learning_goals'
   | 'learning_cards'
-  | 'trips';
+  | 'trips'
+  | 'phone_signals';
 
 export interface BaseDoc {
   _id: string;
@@ -208,4 +209,28 @@ export interface NudgeDoc extends BaseDoc {
   suggestedAction?: { label: string; type: string };
   firedAt: string; // ISO
   acknowledged: boolean;
+}
+
+// ─── Phone awareness (the "well-wisher who sees your whole phone") ─────────
+// Raw signals captured passively from the device (notifications from any app,
+// SMS, calls, app-usage). The agent PERCEIVES these — learns durable facts and
+// surfaces proactive reminders for what you'd otherwise forget. No one narrates
+// their life; Pulse observes it. Body text is high-signal and privacy-sensitive,
+// so it's processed then can be discarded; only durable learnings persist.
+export type PhoneSignalKind =
+  | 'notification' // a notification posted by any app (the goldmine on Android)
+  | 'sms'
+  | 'call'
+  | 'app_usage'
+  | 'location'
+  | 'other';
+
+export interface PhoneSignalDoc extends BaseDoc {
+  kind: PhoneSignalKind;
+  app?: string; // package / app label that produced it (e.g. "WhatsApp", "HDFC Bank")
+  title?: string; // notification title / sender
+  body?: string; // notification text / message body
+  meta?: Record<string, unknown>; // kind-specific extras (e.g. duration, place)
+  occurredAt: string; // ISO — when it happened on the device
+  processed: boolean; // has the perception loop reasoned over it yet
 }

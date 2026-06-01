@@ -30,6 +30,7 @@ const ALL_COLLECTIONS: CollectionName[] = [
   'integrations',
   'user_profile',
   'provider_state',
+  'phone_signals',
 ];
 
 @Injectable()
