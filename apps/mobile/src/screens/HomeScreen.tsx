@@ -189,13 +189,15 @@ export function HomeScreen() {
 }
 
 function ModeBadge({ storage, ai }: { storage: string; ai: string }) {
-  const live = storage === 'mongo' && ai === 'gemini';
+  const aiLive = ai === 'gemini';
+  const full = aiLive && storage === 'mongo';
+  // The brain (AI) is what matters most — surface it even before MongoDB is added.
+  const label = full ? 'LIVE' : aiLive ? 'AI LIVE' : 'DEMO';
+  const color = aiLive ? colors.success : colors.warning;
   return (
-    <View style={[styles.modeBadge, { borderColor: live ? colors.success : colors.warning }]}>
-      <View style={[styles.modeDot, { backgroundColor: live ? colors.success : colors.warning }]} />
-      <Text style={[styles.modeText, { color: live ? colors.success : colors.warning }]}>
-        {live ? 'LIVE' : 'DEMO'}
-      </Text>
+    <View style={[styles.modeBadge, { borderColor: color }]}>
+      <View style={[styles.modeDot, { backgroundColor: color }]} />
+      <Text style={[styles.modeText, { color }]}>{label}</Text>
     </View>
   );
 }
