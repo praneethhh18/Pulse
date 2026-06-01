@@ -19,6 +19,7 @@ import { setAuthTokenGetter } from './src/api/client';
 import { I18nProvider, useI18n } from './src/i18n';
 import type { TranslationKey } from './src/i18n/translations';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { phoneAwareness } from './src/phone/phoneAwareness';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -88,6 +89,8 @@ function Root() {
 
   useEffect(() => {
     setAuthTokenGetter(getIdToken);
+    // Point the native notification listener at this backend (no-op in Expo Go).
+    phoneAwareness.configure();
     if (!authEnabled) return;
     return watchAuth((u) => setUser(u));
   }, []);

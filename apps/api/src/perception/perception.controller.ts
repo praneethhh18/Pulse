@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
 import {
   IsArray,
   IsIn,
@@ -40,13 +40,22 @@ export class PerceptionController {
     private readonly persistence: PersistenceService,
   ) {}
 
-  // Ingest a batch and reason over it in one shot (returns any new reminders).
+  // Ingest a batch. The live phone stream posts with ?defer=1 (just store —
+  // cheap, no LLM per notification); the app later triggers a perceive pass.
+  // Without defer, it ingests AND reasons in one shot (used for testing/manual).
   @Post()
-  ingest(@Body() dto: IngestDto, @Headers('x-user-id') userHeader?: string) {
-    return this.perception.ingestAndPerceive(
-      resolveUserId(this.persistence, userHeader),
-      dto.signals,
-    );
+  ingest(
+    @Body() dto: IngestDto,
+    @Query('defer') defer?: string,
+    @Headers('x-user-id') userHeader?: string,
+  ) {
+    const userId = resolveUserId(this.persistence, userHeader);
+    if (defer === '1' || defer === 'true') {
+      return this.perception
+        .ingest(userId, dto.signals)
+        .then((rows) => ({ ingested: rows.length, deferred: true }));
+    }
+    return this.perception.ingestAndPerceive(userId, dto.signals);
   }
 
   // Recent raw signals (debug / a "what Pulse has seen" view).

@@ -65,6 +65,11 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ signals }) },
     ),
   recentSignals: () => req<PhoneSignal[]>('/me/signals'),
+  // Reason over signals the phone has uploaded but not yet processed.
+  perceiveSignals: () =>
+    req<{ processed: number; learned: number; reminders: Nudge[] }>('/me/signals/perceive', {
+      method: 'POST',
+    }),
   ackNudge: (key: string) =>
     req<{ ok: boolean }>('/context/nudges/ack', {
       method: 'POST',

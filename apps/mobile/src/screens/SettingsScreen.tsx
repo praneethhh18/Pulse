@@ -17,6 +17,7 @@ import { authEnabled, currentEmail, signOutUser } from '../lib/firebase';
 import { useI18n } from '../i18n';
 import { colors, font, radius, spacing } from '../theme';
 import { Card, SectionHeader } from '../components/ui';
+import { PhoneAwarenessCard } from '../components/PhoneAwarenessCard';
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -283,6 +284,9 @@ export function SettingsScreen() {
         <View style={styles.divider} />
         <ModeRow icon="globe" label="API" value={API_URL} ok mono />
       </Card>
+
+      {/* Phone awareness — the well-wisher who watches over your phone */}
+      <PhoneAwarenessCard />
 
       {/* What Pulse has learned — the grow-with-you memory */}
       <SectionHeader title={t('settings.learned')} icon="sparkles" />
