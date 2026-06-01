@@ -4,6 +4,7 @@ import { colors, font, spacing } from '../theme';
 
 interface State {
   error: Error | null;
+  info?: string | null;
 }
 
 // Catches render-time crashes so we see the real message on-device instead of a
@@ -15,9 +16,19 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     return { error };
   }
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, info: { componentStack?: string }) {
+    // Print the component tree to Metro so we can pinpoint the failing screen.
     // eslint-disable-next-line no-console
-    console.error('Pulse crash:', error);
+    console.error('=== PULSE CRASH ===');
+    // eslint-disable-next-line no-console
+    console.error('message:', error.message);
+    // eslint-disable-next-line no-console
+    console.error('componentStack:', info?.componentStack ?? '(none)');
+    // eslint-disable-next-line no-console
+    console.error('stack:', error.stack ?? '(none)');
+    // eslint-disable-next-line no-console
+    console.error('=== END PULSE CRASH ===');
+    this.setState({ info: info?.componentStack ?? null });
   }
 
   render() {
@@ -26,8 +37,10 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
         <ScrollView style={styles.fill} contentContainerStyle={styles.content}>
           <Text style={styles.title}>Something broke on this screen</Text>
           <Text style={styles.msg}>{this.state.error.message}</Text>
-          {this.state.error.stack ? (
-            <Text style={styles.stack}>{this.state.error.stack.split('\n').slice(0, 8).join('\n')}</Text>
+          {this.state.info ? (
+            <Text style={styles.stack}>{this.state.info.split('\n').slice(0, 12).join('\n')}</Text>
+          ) : this.state.error.stack ? (
+            <Text style={styles.stack}>{this.state.error.stack.split('\n').slice(0, 10).join('\n')}</Text>
           ) : null}
           <Text style={styles.hint}>Screenshot this and send it over — it pinpoints the fix.</Text>
         </ScrollView>

@@ -287,9 +287,9 @@ export function SettingsScreen() {
       {/* What Pulse has learned — the grow-with-you memory */}
       <SectionHeader title={t('settings.learned')} icon="sparkles" />
       <Card>
-        {profile.data && profile.data.facts.length ? (
+        {(profile.data?.facts ?? []).length ? (
           <View style={{ gap: spacing(2) }}>
-            {profile.data.facts.map((f, i) => (
+            {(profile.data?.facts ?? []).map((f, i) => (
               <View key={i} style={styles.factRow}>
                 <Ionicons name="ellipse" size={6} color={colors.brandSoft} />
                 <Text style={styles.factText}>{f.replace(/^[-•]\s*/, '')}</Text>
@@ -312,7 +312,7 @@ export function SettingsScreen() {
       <Card>
         <Text style={styles.dataLine}>
           {dataSummary.data
-            ? `Pulse holds ${dataSummary.data.total} record${dataSummary.data.total === 1 ? '' : 's'} across ${Object.keys(dataSummary.data.counts).length} categor${Object.keys(dataSummary.data.counts).length === 1 ? 'y' : 'ies'}.`
+            ? `Pulse holds ${dataSummary.data.total ?? 0} record${dataSummary.data.total === 1 ? '' : 's'} across ${Object.keys(dataSummary.data.counts ?? {}).length} categor${Object.keys(dataSummary.data.counts ?? {}).length === 1 ? 'y' : 'ies'}.`
             : 'Your data, in your control.'}
         </Text>
         <Text style={styles.dataNote}>

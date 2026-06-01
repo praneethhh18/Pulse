@@ -47,7 +47,9 @@ export function MoneySheet({ visible, onClose }: { visible: boolean; onClose: ()
   });
 
   const d = q.data;
-  const max = d ? Math.max(...d.categories.map((c) => c.amount), 1) : 1;
+  const categories = d?.categories ?? [];
+  const subscriptions = d?.subscriptions ?? [];
+  const max = Math.max(...categories.map((c) => c.amount), 1);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -71,7 +73,7 @@ export function MoneySheet({ visible, onClose }: { visible: boolean; onClose: ()
               <Text style={styles.spentValue}>{inr(d.total)}</Text>
 
               <View style={{ marginTop: spacing(5), gap: spacing(3) }}>
-                {d.categories.map((c) => (
+                {categories.map((c) => (
                   <View key={c.name}>
                     <View style={styles.catRow}>
                       <Text style={styles.catName}>{c.name}</Text>
@@ -90,10 +92,10 @@ export function MoneySheet({ visible, onClose }: { visible: boolean; onClose: ()
                 ))}
               </View>
 
-              {d.subscriptions.length ? (
+              {subscriptions.length ? (
                 <>
                   <Text style={styles.section}>{t('money.subscriptions')}</Text>
-                  {d.subscriptions.map((s) => (
+                  {subscriptions.map((s) => (
                     <View key={s.merchant} style={styles.subRow}>
                       <Ionicons name="repeat" size={15} color={colors.brandSoft} />
                       <Text style={styles.subName}>{s.merchant}</Text>

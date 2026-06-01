@@ -29,6 +29,10 @@ export function HealthScreen() {
 
   if (q.isLoading) return <Loader label="…" />;
   const d = q.data;
+  // Defensive defaults: a summary may omit a section, so never assume the arrays exist.
+  const vitals = d?.vitals ?? [];
+  const medications = d?.medications ?? [];
+  const symptoms = d?.symptoms ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + spacing(3) }}>
@@ -37,16 +41,16 @@ export function HealthScreen() {
         <Text style={styles.subtitle}>{t('health.subtitle')}</Text>
 
         <SectionHeader title={t('health.vitals')} icon="pulse" />
-        {d && d.vitals.length ? (
+        {vitals.length ? (
           <View style={styles.vitalGrid}>
-            {d.vitals.map((v) => (
+            {vitals.map((v) => (
               <Card key={v.name} style={styles.vitalCard}>
                 <Text style={styles.vitalName}>{v.name}</Text>
                 <Text style={styles.vitalValue}>
                   {v.latest}
                   {v.unit ? <Text style={styles.vitalUnit}> {v.unit}</Text> : null}
                 </Text>
-                {v.trend.length > 1 ? (
+                {(v.trend?.length ?? 0) > 1 ? (
                   <Text style={styles.vitalTrend}>{v.trend.join('  ›  ')}</Text>
                 ) : null}
               </Card>
@@ -58,8 +62,8 @@ export function HealthScreen() {
 
         <SectionHeader title={t('health.medications')} icon="medkit" />
         <Card>
-          {d && d.medications.length ? (
-            d.medications.map((m, i) => (
+          {medications.length ? (
+            medications.map((m, i) => (
               <View key={i} style={[styles.row, i > 0 && styles.divider]}>
                 <Ionicons name="medical" size={16} color={colors.success} />
                 <View style={{ flex: 1 }}>
@@ -78,8 +82,8 @@ export function HealthScreen() {
 
         <SectionHeader title={t('health.symptoms')} icon="thermometer" />
         <Card>
-          {d && d.symptoms.length ? (
-            d.symptoms.map((s, i) => (
+          {symptoms.length ? (
+            symptoms.map((s, i) => (
               <View key={i} style={[styles.row, i > 0 && styles.divider]}>
                 <Ionicons name="alert-circle" size={16} color={colors.warning} />
                 <View style={{ flex: 1 }}>
