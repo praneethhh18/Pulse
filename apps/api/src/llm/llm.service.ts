@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { hashEmbed } from './embeddings';
+import { hashEmbed, MOCK_EMBED_DIM } from './embeddings';
 import { PersistenceService } from '../persistence/persistence.service';
 import {
   FailoverReason,
@@ -31,6 +31,7 @@ export class LlmService {
   private readonly fallbackModels: string[];
   private readonly maxRetries: number;
   readonly live: boolean;
+  readonly embedSignature: string; // identifies the embedder that produced a vector
 
   constructor(
     private readonly config: ConfigService,
@@ -39,13 +40,14 @@ export class LlmService {
     const key = this.config.get<string>('GEMINI_API_KEY');
     this.model = this.config.get<string>('GEMINI_MODEL') || 'gemini-2.5-pro';
     this.embedModel =
-      this.config.get<string>('GEMINI_EMBED_MODEL') || 'text-embedding-004';
+      this.config.get<string>('GEMINI_EMBED_MODEL') || 'gemini-embedding-001';
     this.fallbackModels = (this.config.get<string>('GEMINI_FALLBACK_MODELS') || '')
       .split(',')
       .map((m) => m.trim())
       .filter(Boolean);
     this.maxRetries = Number(this.config.get('LLM_MAX_RETRIES') ?? 3);
     this.live = !!key;
+    this.embedSignature = this.live ? this.embedModel : `mock@${MOCK_EMBED_DIM}`;
     if (this.live) {
       this.gemini = new GoogleGenerativeAI(key as string);
       this.logger.log(
@@ -144,7 +146,12 @@ export class LlmService {
       try {
         return await this.runWithRetry('embed', async () => {
           const m = this.gemini!.getGenerativeModel({ model: this.embedModel });
-          const r = await m.embedContent(text);
+          // Match the offline embedder's dimension so vectors stay comparable
+          // (cosine needs equal lengths across mock-seeded and live docs).
+          const r = await m.embedContent({
+            content: { role: 'user', parts: [{ text }] },
+            outputDimensionality: MOCK_EMBED_DIM,
+          } as any);
           return r.embedding.values;
         });
       } catch (e) {

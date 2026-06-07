@@ -60,6 +60,7 @@ export interface DocumentDoc extends BaseDoc {
   category: DocumentCategory;
   content: string; // OCR'd / extracted text — searchable
   embedding: number[]; // vector for semantic search
+  embedModel?: string; // which embedder produced `embedding` (for self-healing on model change)
   expiresAt?: string; // ISO — drives expiry intelligence
   tags: string[];
   // Attached media (photo/scan of the document)

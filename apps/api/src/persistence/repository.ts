@@ -195,23 +195,22 @@ export class MongoRepository<T extends { _id: string; userId: string }>
           { $addFields: { __score: { $meta: 'vectorSearchScore' } } },
         ])
         .toArray()) as Array<T & { __score: number }>;
-      return results.map((r) => ({ doc: r, score: r.__score }));
+      if (results.length) return results.map((r) => ({ doc: r, score: r.__score }));
+      // Index missing/empty often returns no rows (rather than throwing) → fall back.
     } catch {
-      // Atlas vector index not created yet → graceful in-app fallback.
-      const all = (await this.col
-        .find({ userId } as never)
-        .toArray()) as unknown as T[];
-      return all
-        .map((doc) => ({
-          doc,
-          score: cosineSimilarity(
-            queryEmbedding,
-            (doc as unknown as { embedding?: number[] }).embedding ?? [],
-          ),
-        }))
-        .filter((r) => r.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
+      // Atlas vector index not created yet → graceful in-app fallback below.
     }
+    const all = (await this.col.find({ userId } as never).toArray()) as unknown as T[];
+    return all
+      .map((doc) => ({
+        doc,
+        score: cosineSimilarity(
+          queryEmbedding,
+          (doc as unknown as { embedding?: number[] }).embedding ?? [],
+        ),
+      }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
   }
 }

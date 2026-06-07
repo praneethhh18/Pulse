@@ -26,7 +26,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,6 +45,11 @@
         }
       ],
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c8ed1e6e-96af-42a6-97e0-b2372403c5a6"
+      }
+    }
   }
 }

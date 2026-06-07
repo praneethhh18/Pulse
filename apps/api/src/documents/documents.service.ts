@@ -75,6 +75,7 @@ export class DocumentsService {
       tags: input.tags ?? [],
       expiresAt: input.expiresAt,
       embedding,
+      embedModel: this.llm.embedSignature,
       ...fileFields,
     });
     return stripDoc(created);
@@ -87,12 +88,28 @@ export class DocumentsService {
 
   async search(userId: string, query: string, limit = 5) {
     if (!query?.trim()) return [];
+    await this.healStaleEmbeddings(userId);
     const queryEmbedding = await this.llm.embed(query);
     const results = await this.repo().vectorSearch(userId, queryEmbedding, limit);
     return results.map((r) => ({
       ...stripDoc(r.doc),
       score: Number(r.score.toFixed(4)),
     }));
+  }
+
+  // Re-embed any docs whose vector came from a different embedder (e.g. seeded
+  // with the offline stand-in, now that a real model is connected). Bounded —
+  // documents are few — and runs once per doc, then they're consistent.
+  private async healStaleEmbeddings(userId: string): Promise<void> {
+    const sig = this.llm.embedSignature;
+    const docs = await this.repo().findByUser(userId);
+    const stale = docs.filter((d) => d.embedModel !== sig);
+    for (const d of stale) {
+      const embedding = await this.llm.embed(
+        `${d.title} ${d.content} ${(d.tags ?? []).join(' ')}`,
+      );
+      await this.repo().update(d._id, { embedding, embedModel: sig });
+    }
   }
 
   // File bytes for previewing an attached image — from Cloud Storage or inline.
