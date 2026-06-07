@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { colors, font, gradients, radius, shadow, spacing } from '../theme';
 import {
@@ -49,7 +49,32 @@ export function HomeScreen() {
   const [travelOpen, setTravelOpen] = useState(false);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const { t } = useI18n();
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ['overview'], queryFn: api.overview });
+
+  // Auto-perceive: process whatever the phone has captured, on open and every
+  // 15s while Home is visible — so reminders surface on their own, no tapping.
+  // (Cheap when there's nothing new: a no-op pass costs no AI.)
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const r = await api.perceiveSignals();
+        if (!cancelled && (r.reminders.length || r.learned)) {
+          qc.invalidateQueries({ queryKey: ['overview'] });
+          qc.invalidateQueries({ queryKey: ['profile'] });
+        }
+      } catch {
+        /* API not reachable right now — try again next tick */
+      }
+    };
+    run();
+    const id = setInterval(run, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [qc]);
 
   if (q.isLoading) return <Loader label="Reading your life…" />;
   if (q.isError || !q.data)
