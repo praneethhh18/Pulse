@@ -1,0 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <application>
+    <!--
+      The NotificationListenerService. The system binds it (when the user grants
+      "Notification access" in Settings) and delivers every notification posted
+      by any app — Pulse's window into the whole phone. Name is fully-qualified
+      because the merged manifest resolves it against the app package otherwise.
+    -->
+    <service
+      android:name="expo.modules.pulsenotifications.PulseNotificationListenerService"
+      android:label="Pulse"
+      android:exported="false"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>

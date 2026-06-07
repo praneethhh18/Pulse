@@ -1,0 +1,14 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.pulsenotifications'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.pulsenotifications"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
